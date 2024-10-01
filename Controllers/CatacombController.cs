@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AreEyeP.Data;
+﻿using AreEyeP.Data;
 using AreEyeP.Models;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AreEyeP.Controllers
 {
@@ -15,38 +16,10 @@ namespace AreEyeP.Controllers
         }
 
         // GET: /Catacomb
-        [HttpGet]
-        public IActionResult Catacombs()
+        public IActionResult Index()
         {
             var catacombs = _context.Catacombs.ToList();
-            ViewBag.GeneratedCatacombID = GenerateCatacombID(); // Pass the generated ID to the view
-            return View(catacombs); // Assuming this is your main page for displaying catacombs
-        }
-
-        // POST: /Catacomb/Create
-        [HttpPost]
-        public IActionResult Create([FromBody] Catacomb model) // [FromBody] ensures the JSON body is bound correctly
-        {
-            if (ModelState.IsValid)
-            {
-                // Generate the Catacomb ID if not already provided
-                if (string.IsNullOrEmpty(model.CatacombID))
-                {
-                    model.CatacombID = GenerateCatacombID();
-                }
-
-                // Set other fields
-                model.DateCreated = DateTime.UtcNow;
-                model.AvailabilityStatus = "Available"; // Set default status
-
-                // Save to database
-                _context.Catacombs.Add(model);
-                _context.SaveChanges();
-
-                return Json(new { success = true, catacombID = model.CatacombID }); // Return the new Catacomb ID
-            }
-
-            return Json(new { success = false, message = "Invalid data" });
+            return View(catacombs);
         }
 
         // Method to generate the CatacombID
@@ -68,6 +41,110 @@ namespace AreEyeP.Controllers
             }
 
             return $"CTM-{nextNumber:D3}";
+        }
+
+        // POST: /Catacomb/Create
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] Catacomb model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    // Set the Catacomb ID if not already set
+                    if (string.IsNullOrEmpty(model.CatacombID))
+                    {
+                        model.CatacombID = GenerateCatacombID();
+                    }
+
+                    // Set default values
+                    model.AvailabilityStatus = "Available";
+                    model.DateCreated = DateTime.UtcNow;
+
+                    // Add to the database
+                    _context.Catacombs.Add(model);
+                    await _context.SaveChangesAsync();
+
+                    return Json(new { success = true, catacombID = model.CatacombID });
+                }
+                catch (Exception ex)
+                {
+                    return Json(new { success = false, message = $"Error: {ex.Message}" });
+                }
+            }
+
+            var errorMessages = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return Json(new { success = false, message = "Failed to add Catacomb. Check your input.", errors = errorMessages });
+        }
+
+        // GET: /Catacomb/Details/{id}
+        [HttpGet]
+        public IActionResult Details(int id)
+        {
+            var catacomb = _context.Catacombs.FirstOrDefault(c => c.Id == id);
+            if (catacomb == null)
+            {
+                return Json(new { success = false, message = "Catacomb not found." });
+            }
+
+            return Json(new { success = true, catacomb });
+        }
+
+        // PUT: /Catacomb/Edit/{id}
+        [HttpPut]
+        public async Task<IActionResult> Edit(int id, [FromBody] Catacomb updatedCatacomb)
+        {
+            if (ModelState.IsValid)
+            {
+                var existingCatacomb = await _context.Catacombs.FindAsync(id);
+                if (existingCatacomb == null)
+                {
+                    return Json(new { success = false, message = "Catacomb not found." });
+                }
+
+                try
+                {
+                    // Update fields
+                    existingCatacomb.CatacombName = updatedCatacomb.CatacombName;
+                    existingCatacomb.Location = updatedCatacomb.Location;
+                    existingCatacomb.DateCreated = updatedCatacomb.DateCreated;
+
+                    _context.Catacombs.Update(existingCatacomb);
+                    await _context.SaveChangesAsync();
+
+                    return Json(new { success = true, message = "Catacomb updated successfully." });
+                }
+                catch (Exception ex)
+                {
+                    return Json(new { success = false, message = $"Error: {ex.Message}" });
+                }
+            }
+
+            var errorMessages = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return Json(new { success = false, message = "Failed to update Catacomb. Check your input.", errors = errorMessages });
+        }
+
+        // DELETE: /Catacomb/Delete/{id}
+        [HttpDelete]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var catacomb = await _context.Catacombs.FindAsync(id);
+            if (catacomb == null)
+            {
+                return Json(new { success = false, message = "Catacomb not found." });
+            }
+
+            try
+            {
+                _context.Catacombs.Remove(catacomb);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Catacomb deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
         }
     }
 }

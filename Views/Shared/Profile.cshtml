@@ -1,0 +1,139 @@
+﻿@model AreEyeP.Models.User
+@{
+    Layout = null; // You can set this to your shared layout if needed
+    ViewData["Title"] = "Manage Profile";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include CSS Links Partial (if you have one) -->
+    @Html.Partial("_CSSLinks")
+</head>
+<body class="sb-nav-fixed">
+    <!-- Render the Header Partial (if you have one) -->
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav">
+        <!-- Include Sidebar Partial (if you have one) -->
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">Manage Profile</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item active">Profile</li>
+                    </ol>
+
+                    <!-- Profile Information -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-user"></i> User Information
+                        </div>
+                        <div class="card-body">
+                            <form id="profileForm">
+                                <div class="mb-3">
+                                    <label for="userName" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="userName" name="Name" value="@Model.Name" readonly />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="userEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="userEmail" name="Email" value="@Model.Email" readonly />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="userRole" class="form-label">Role</label>
+                                    <input type="text" class="form-control" id="userRole" name="Role" value="@Model.Role" readonly />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Change Password Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-white">
+                            <i class="fas fa-key"></i> Change Password
+                        </div>
+                        <div class="card-body">
+                            <form id="changePasswordForm">
+                                <div class="mb-3">
+                                    <label for="currentPassword" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="currentPassword" name="CurrentPassword" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="newPassword" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="newPassword" name="NewPassword" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirmPassword" name="ConfirmPassword" required />
+                                </div>
+                                <button type="submit" class="btn btn-primary">Change Password</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Footer Section (if applicable) -->
+            <footer class="py-4 bg-light mt-auto">
+                <div class="container-fluid px-4">
+                    <div class="d-flex align-items-center justify-content-between small">
+                        <div class="text-muted">© 2024 Your Company</div>
+                        <div>
+                            <a href="#">Privacy Policy</a> &middot;
+                            <a href="#">Terms & Conditions</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Include Script Links Partial (if you have one) -->
+    @Html.Partial("_ScriptLinks")
+
+    <!-- Add the following JavaScript for handling password change functionality -->
+    <script>
+        document.getElementById('changePasswordForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                toastr.error('New passwords do not match.');
+                return;
+            }
+
+            const payload = {
+                CurrentPassword: currentPassword,
+                NewPassword: newPassword
+            };
+
+            fetch('/User/ChangePassword', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    toastr.success(result.message);
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    toastr.error(result.message);
+                }
+            })
+            .catch(error => toastr.error('An error occurred while changing the password.'));
+        });
+    </script>
+</body>
+</html>

@@ -13,6 +13,7 @@
 
     <!-- Include the CSS Links Partial -->
     @Html.Partial("_CSSLinks")
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css" />
 </head>
 <body class="sb-nav-fixed">
     <!-- Render the Header Partial -->
@@ -26,9 +27,6 @@
             <main>
                 <div class="container-fluid px-4">
                     <h1 class="mt-4">User Management</h1>
-                    <ol class="breadcrumb mb-4">
-                        <li class="breadcrumb-item active">User Management</li>
-                    </ol>
 
                     <!-- Add User Button -->
                     <div class="d-flex justify-content-end mb-4">
@@ -37,87 +35,67 @@
                         </button>
                     </div>
 
-                    <!-- User List Table -->
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model != null && Model.Any())
-                                {
-                                    int i = 1;
-                                    foreach (var user in Model)
-                                    {
+                    <!-- User List Table inside a Card -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-users"></i> User List
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table id="userTable" class="display table table-bordered table-hover" style="width:100%">
+                                    <thead class="bg-primary text-white">
                                         <tr>
-                                            <td>@i</td>
-                                            <td>@user.Name</td>
-                                            <td>@user.Email</td>
-                                            <td>@user.Role</td>
-                                            <td>
-                                                <button class="btn btn-warning btn-sm" data-id="@user.Id" data-bs-toggle="modal" data-bs-target="#editUserModal" onclick="editUser(@user.Id)">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </button>
-                                                <button class="btn btn-danger btn-sm" data-id="@user.Id" onclick="deleteUser(@user.Id)">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </td>
+                                            <th>#</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Actions</th>
                                         </tr>
-                                        i++;
-                                    }
-                                }
-                                else
-                                {
-                                    <tr>
-                                        <td colspan="5">No users found.</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Add User Modal -->
-                    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <form id="addUserForm">
-                                        <div class="mb-3">
-                                            <label for="userName" class="form-label">Name</label>
-                                            <input type="text" class="form-control" id="userName" name="Name" placeholder="Enter user's name" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="userEmail" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="userEmail" name="Email" placeholder="Enter user's email" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="userPassword" class="form-label">Password</label>
-                                            <input type="password" class="form-control" id="userPassword" name="Password" placeholder="Enter password" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="userRole" class="form-label">Role</label>
-                                            <select class="form-select" id="userRole" name="Role" required>
-                                                <option value="Admin">Admin</option>
-                                                <option value="Staff">Staff</option>
-                                                <option value="LGU">LGU</option>
-                                            </select>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            <button type="submit" class="btn btn-primary">Save User</button>
-                                        </div>
-                                    </form>
-                                </div>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model != null && Model.Any())
+                                        {
+                                            int i = 1;
+                                            foreach (var user in Model.Where(u => u.Role.ToLower() != "client"))
+                                            {
+                                                <tr>
+                                                    <td>@i</td>
+                                                    <td>@user.Name</td>
+                                                    <td>@user.Email</td>
+                                                    <td>
+                                                        @if (user.Role.ToLower() == "admin")
+                                                        {
+                                                            <span class="badge bg-success">Admin</span>
+                                                        }
+                                                        else if (user.Role.ToLower() == "staff")
+                                                        {
+                                                            <span class="badge bg-warning text-dark">Staff</span>
+                                                        }
+                                                        else if (user.Role.ToLower() == "lgu")
+                                                        {
+                                                            <span class="badge bg-info text-dark">LGU</span>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-warning btn-sm" data-id="@user.Id" data-bs-toggle="modal" data-bs-target="#editUserModal" onclick="editUser(@user.Id)">
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-danger btn-sm" data-id="@user.Id" onclick="deleteUser(@user.Id)">
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                i++;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="text-center">No users found.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -126,11 +104,56 @@
         </div>
     </div>
 
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="userName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="userName" name="Name" placeholder="Enter user's name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="userEmail" name="Email" placeholder="Enter user's email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="userPassword" name="Password" placeholder="Enter password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userRole" class="form-label">Role</label>
+                            <select class="form-select" id="userRole" name="Role" required>
+                                <option value="Admin">Admin</option>
+                                <option value="Staff">Staff</option>
+                                <option value="LGU">LGU</option>
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save User</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Include the Script Links Partial -->
     @Html.Partial("_ScriptLinks")
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
 
     <!-- Modal Script for adding users via AJAX -->
     <script>
+        $(document).ready(function () {
+            $('#userTable').DataTable(); // Initialize DataTable
+        });
+
         document.getElementById('addUserForm').addEventListener('submit', function (event) {
             event.preventDefault();
             var formData = new FormData(this);
@@ -139,16 +162,16 @@
                 method: 'POST',
                 body: formData
             })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        toastr.success(result.message);
-                        location.reload(); // Reload the page to show the new user in the list
-                    } else {
-                        toastr.error(result.message);
-                    }
-                })
-                .catch(error => toastr.error('Error:', error));
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    toastr.success(result.message);
+                    location.reload(); // Reload the page to show the new user in the list
+                } else {
+                    toastr.error(result.message);
+                }
+            })
+            .catch(error => toastr.error('Error:', error));
         });
 
         function deleteUser(id) {
@@ -160,8 +183,8 @@
                     },
                     body: JSON.stringify({ id: id })
                 })
-                    .then(response => location.reload())
-                    .catch(error => toastr.error('Error:', error));
+                .then(response => location.reload())
+                .catch(error => toastr.error('Error:', error));
             }
         }
 

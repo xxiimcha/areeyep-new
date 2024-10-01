@@ -49,19 +49,31 @@
                 }
 
                 @* Staff Role Sidebar Menu *@
-                @if (userRole == "staff")
+                @if (userRole == "Staff")
                 {
                     <a class="nav-link text-white" href="/Staff/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
                         Home
                     </a>
-                    <a class="nav-link text-white" href="/Staff/Clients">
+                    <a class="nav-link text-white" href="/Staff/Profile">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
-                        Clients
+                        Manage Profile
                     </a>
-                    <a class="nav-link text-white" href="/Staff/Payments">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
-                        Payments
+                    <a class="nav-link text-white" href="/Staff/Services">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-briefcase"></i></div>
+                        Services
+                    </a>
+                    <a class="nav-link text-white" href="/Staff/Catacombs">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-layer-group"></i></div>
+                        Catacomb
+                    </a>
+                    <a class="nav-link text-white" href="/Staff/Schedule">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-calendar-alt"></i></div>
+                        Schedule
+                    </a>
+                    <a class="nav-link text-white" href="/Staff/Notifications">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
+                        Notifications
                     </a>
                 }
 

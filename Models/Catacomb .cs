@@ -23,6 +23,7 @@ namespace AreEyeP.Models
         [Display(Name = "Date Created")]
         public DateTime DateCreated { get; set; } = DateTime.UtcNow;
 
-        public string DeceasedInformation { get; set; }
+        public string? DeceasedInformation { get; set; }
+
     }
 }

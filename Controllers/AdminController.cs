@@ -34,7 +34,31 @@ namespace AreEyeP.Controllers
         public IActionResult Catacombs()
         {
             var catacombs = _context.Catacombs.ToList();
+
+            // Generate the next Catacomb ID
+            string generatedCatacombID = GenerateCatacombID();
+            ViewBag.GeneratedCatacombID = generatedCatacombID;
+
             return View(catacombs);
+        }
+
+        // Method to generate the CatacombID
+        private string GenerateCatacombID()
+        {
+            var latestCatacomb = _context.Catacombs.OrderByDescending(c => c.Id).FirstOrDefault();
+
+            int nextNumber = 1; // Start with 1 if no records found
+
+            if (latestCatacomb != null && !string.IsNullOrEmpty(latestCatacomb.CatacombID))
+            {
+                var currentId = latestCatacomb.CatacombID.Replace("CTM-", "");
+                if (int.TryParse(currentId, out int currentNumber))
+                {
+                    nextNumber = currentNumber + 1;
+                }
+            }
+
+            return $"CTM-{nextNumber:D3}";
         }
 
         // POST: Admin/AddUser

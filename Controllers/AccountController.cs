@@ -50,12 +50,15 @@ namespace AreEyeP.Controllers
 
                 if (user != null)
                 {
+                    // Debugging line to check the role of the user
+                    Console.WriteLine($"User role: {user.Role}"); // You can use this to debug in the output window
+
                     // Set the user's role and UserId in session
                     HttpContext.Session.SetString("UserRole", user.Role);
                     HttpContext.Session.SetInt32("UserId", user.Id);
 
                     // Redirect based on user role
-                    switch (user.Role.ToLower())
+                    switch (user.Role.Trim().ToLower())
                     {
                         case "admin":
                             return RedirectToAction("Dashboard", "Admin");
@@ -79,6 +82,7 @@ namespace AreEyeP.Controllers
             // Return to the login page if there's an issue
             return View(model);
         }
+
 
         // GET: /Account/Register
         [HttpGet]

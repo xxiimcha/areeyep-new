@@ -13,6 +13,7 @@ namespace AreEyeP.Data
         public DbSet<ClientPayment> ClientPayments { get; set; }
         public DbSet<BurialApplication> BurialApplications { get; set; }
         public DbSet<Catacomb> Catacombs { get; set; }
+        public DbSet<Schedule> Schedules { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
