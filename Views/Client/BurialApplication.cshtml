@@ -1,0 +1,154 @@
+﻿@model AreEyeP.Models.BurialApplication
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Burial Application</title>
+    <link href="~/css/styles.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="sb-nav-fixed">
+    <!-- Include the Header Partial -->
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav">
+        <!-- Include the Sidebar Partial -->
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h2 class="text-center mt-4 mb-4">Burial Application</h2>
+                    <form asp-action="SubmitBurialApplication" asp-controller="Client" method="post" enctype="multipart/form-data">
+                        <div class="card shadow-lg">
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Applicant Information Section -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-primary">
+                                            <div class="card-header bg-primary text-white">
+                                                <h5 class="card-title mb-0"><i class="fas fa-user"></i> Applicant Information</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-group">
+                                                    <label for="ApplicantFirstName" class="form-label">Full Name</label>
+                                                    <div class="input-group">
+                                                        <input class="form-control" type="text" id="ApplicantFirstName" name="ApplicantFirstName" placeholder="First Name" required />
+                                                        <input class="form-control ms-2" type="text" id="ApplicantLastName" name="ApplicantLastName" placeholder="Last Name" required />
+                                                    </div>
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="Address" class="form-label">Address</label>
+                                                    <input class="form-control" type="text" id="Address" name="Address" placeholder="Barangay gun ob, Mandaue Cebu City" required />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="RelationshipToDeceased" class="form-label">Relationship to Deceased</label>
+                                                    <input class="form-control" type="text" id="RelationshipToDeceased" name="RelationshipToDeceased" placeholder="(e.g., spouse, child, friend)" required />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="ContactInformation" class="form-label">Contact Information</label>
+                                                    <input class="form-control" type="text" id="ContactInformation" name="ContactInformation" placeholder="(Phone Number, Email Address)" required />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Burial Details Section -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-success">
+                                            <div class="card-header bg-success text-white">
+                                                <h5 class="card-title mb-0"><i class="fas fa-cross"></i> Burial Details</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-group">
+                                                    <label for="BurialDate" class="form-label">Date of Burial</label>
+                                                    <input class="form-control" type="date" id="BurialDate" name="BurialDate" required />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label>Time of Burial</label>
+                                                    <div class="input-group">
+                                                        <input class="form-control" type="time" name="StartTime" required />
+                                                        <input class="form-control ms-2" type="time" name="EndTime" required />
+                                                    </div>
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="SpecialInstructions" class="form-label">Special Instructions</label>
+                                                    <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" placeholder="Specify..." rows="3"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Deceased Information Section -->
+                                    <div class="col-md-12">
+                                        <div class="card border-secondary">
+                                            <div class="card-header bg-secondary text-white">
+                                                <h5 class="card-title mb-0"><i class="fas fa-person-digging"></i> Deceased Information</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-group">
+                                                    <label for="DeceasedFirstName" class="form-label">Full Name</label>
+                                                    <div class="input-group">
+                                                        <input class="form-control" type="text" id="DeceasedFirstName" name="DeceasedFirstName" placeholder="First Name" required />
+                                                        <input class="form-control ms-2" type="text" id="DeceasedLastName" name="DeceasedLastName" placeholder="Last Name" required />
+                                                    </div>
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label>Your Gender</label>
+                                                    <div class="d-flex">
+                                                        <div class="form-check me-3">
+                                                            <input class="form-check-input" type="radio" name="Gender" value="Male" required />
+                                                            <label class="form-check-label">Male</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="Gender" value="Female" required />
+                                                            <label class="form-check-label">Female</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="DateOfBirth" class="form-label">Date of Birth</label>
+                                                    <input class="form-control" type="date" id="DateOfBirth" name="DateOfBirth" required />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="DateOfDeath" class="form-label">Date of Death</label>
+                                                    <input class="form-control" type="date" id="DateOfDeath" name="DateOfDeath" required />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="CauseOfDeath" class="form-label">Cause of Death</label>
+                                                    <input class="form-control" type="text" id="CauseOfDeath" name="CauseOfDeath" placeholder="Cause of death" required />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="Religion" class="form-label">Religion</label>
+                                                    <input class="form-control" type="text" id="Religion" name="Religion" value="Roman Catholic" readonly />
+                                                </div>
+                                                <div class="form-group mt-3">
+                                                    <label for="Attachment" class="form-label">Attach Requirement (Death certificate, ID of the Applicant)</label>
+                                                    <input class="form-control-file" type="file" id="Attachment" name="Attachment" required />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit and Cancel Buttons -->
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-success btn-lg me-3"><i class="fas fa-paper-plane"></i> SUBMIT</button>
+                                    <a href="/Client/Dashboard" class="btn btn-secondary btn-lg"><i class="fas fa-times"></i> CANCEL</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="~/js/scripts.js"></script>
+</body>
+</html>

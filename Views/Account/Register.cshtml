@@ -1,0 +1,160 @@
+﻿@model AreEyeP.Models.RegistrationViewModel
+
+<body class="bg-gradient d-flex justify-content-center align-items-center" style="height: 100vh; margin: 0;">
+    <div class="registration-container card border-0 shadow-lg" style="width: auto; border-radius: 30px; padding: 30px;">
+        <!-- Logo Section -->
+        <div class="text-center mb-4">
+            <img src="~/images/logo.png" alt="Logo" class="img-fluid" style="max-width: 150px;" />
+        </div>
+
+        <h3 class="text-center mb-3 font-weight-bold">Create a New Account</h3>
+        <p class="text-center text-muted">Fill in the details to create your account.</p>
+
+        <form asp-action="Register" asp-controller="Account" method="post">
+            <!-- Full Name -->
+            <div class="form-row mb-3 d-flex justify-content-between">
+                <div class="form-group flex-fill mr-2">
+                    <input class="form-control rounded-pill" name="FirstName" type="text" placeholder="First Name" required />
+                </div>
+                <div class="form-group flex-fill ml-2">
+                    <input class="form-control rounded-pill" name="LastName" type="text" placeholder="Last Name" required />
+                </div>
+            </div>
+
+            <!-- Birthday -->
+            <div class="form-row mb-3">
+                <label for="Birthday" class="form-label d-block w-100">Birthday <i class="fas fa-question-circle" title="Enter your date of birth"></i></label>
+                <div class="d-flex justify-content-between">
+                    <select class="form-control rounded-pill mr-2" name="Day" style="width: 32%;" required>
+                        <option value="" disabled selected>Day</option>
+                        @for (int i = 1; i <= 31; i++)
+                        {
+                            <option value="@i">@i</option>
+                        }
+                    </select>
+                    <select class="form-control rounded-pill mr-2" name="Month" style="width: 32%;" required>
+                        <option value="" disabled selected>Month</option>
+                        <option value="January">January</option>
+                        <option value="February">February</option>
+                        <option value="March">March</option>
+                        <option value="April">April</option>
+                        <option value="May">May</option>
+                        <option value="June">June</option>
+                        <option value="July">July</option>
+                        <option value="August">August</option>
+                        <option value="September">September</option>
+                        <option value="October">October</option>
+                        <option value="November">November</option>
+                        <option value="December">December</option>
+                    </select>
+                    <select class="form-control rounded-pill" name="Year" style="width: 32%;" required>
+                        <option value="" disabled selected>Year</option>
+                        @for (int i = DateTime.Now.Year; i >= 1900; i--)
+                        {
+                            <option value="@i">@i</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Gender -->
+            <div class="form-group mb-3">
+                <label for="Gender" class="form-label d-block">Your Gender</label>
+                <div class="d-flex">
+                    <div class="form-check mr-4">
+                        <input class="form-check-input" type="radio" name="Gender" value="Male" id="male" required />
+                        <label class="form-check-label" for="male">Male</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Gender" value="Female" id="female" required />
+                        <label class="form-check-label" for="female">Female</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Number -->
+            <div class="form-group mb-3 position-relative">
+                <input class="form-control rounded-pill" name="ContactNumber" type="text" placeholder="Contact Number" required />
+            </div>
+
+            <!-- Email Address -->
+            <div class="form-group mb-3 position-relative">
+                <input class="form-control rounded-pill" name="Email" type="email" placeholder="Enter your Email" required />
+            </div>
+
+            <!-- Username -->
+            <div class="form-group mb-3 position-relative">
+                <input class="form-control rounded-pill" name="Username" type="text" placeholder="Enter your Username" required />
+            </div>
+
+            <!-- Password -->
+            <div class="form-group mb-3 position-relative">
+                <input class="form-control rounded-pill" name="Password" type="password" placeholder="Enter your Password" required />
+            </div>
+
+            <!-- Register Button -->
+            <button type="submit" class="btn btn-success rounded-pill w-100 mt-3 mb-2" style="height: 50px; font-size: 1rem; font-weight: bold;">REGISTER</button>
+
+            <!-- Login Link -->
+            <div class="text-center mt-3">
+                Already have an account? <a href="login.html" class="text-primary">Login here</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Additional Styles -->
+    <style>
+        /* Background Gradient */
+        .bg-gradient {
+            background: linear-gradient(to right, #8300e9, #ff00a6);
+        }
+
+        /* Custom Styles for the Registration Page */
+        .registration-container {
+            background-color: #fff;
+            border-radius: 30px;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+            width: 400px; /* Adjust the width of the container */
+            padding: 40px;
+        }
+
+        /* Form control styles */
+        .form-control {
+            padding-left: 15px;
+            font-size: 16px;
+            height: 45px;
+        }
+
+        /* Placeholder styling */
+        ::placeholder {
+            color: #aaa;
+            opacity: 1;
+        }
+
+        /* Button hover effect */
+        .btn-success {
+            background-color: #28a745;
+            border: none;
+        }
+
+            .btn-success:hover {
+                background-color: #218838;
+            }
+
+        /* Link styling */
+        a {
+            text-decoration: none !important;
+        }
+
+            a.text-primary {
+                color: #0062cc;
+            }
+
+                a.text-primary:hover {
+                    text-decoration: underline;
+                }
+    </style>
+
+    <!-- FontAwesome Icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>

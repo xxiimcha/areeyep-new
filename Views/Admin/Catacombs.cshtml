@@ -1,0 +1,195 @@
+﻿@model List<AreEyeP.Models.Catacomb>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catacomb Management</title>
+    <link href="~/css/styles.css" rel="stylesheet" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+</head>
+<body class="sb-nav-fixed">
+    <!-- Include the Header and Sidebar Partial -->
+    @Html.Partial("_Header")
+    <div id="layoutSidenav">
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h2 class="text-center mt-4">Catacomb Management</h2>
+
+                    <!-- Catacomb Details Form -->
+                    <div class="card mb-4 mt-4">
+                        <div class="card-header bg-success text-white">Catacomb Details</div>
+                        <div class="card-body">
+                            <form id="catacombForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="catacombID">Catacomb ID</label>
+                                            <input class="form-control" type="text" id="catacombID" name="CatacombID" value="@ViewBag.GeneratedCatacombID" readonly />
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label for="catacombName">Catacomb Name</label>
+                                            <input class="form-control" type="text" id="catacombName" name="catacombName" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="location">Location of Catacomb</label>
+                                            <input class="form-control" type="text" id="location" name="location" required />
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label for="dateCreated">Date Created</label>
+                                            <input class="form-control" type="date" id="dateCreated" name="dateCreated" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right mt-3">
+                                    <button id="addBtn" class="btn btn-success" type="button" onclick="addCatacomb()">Add</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Catacomb List -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">Catacomb List</div>
+                        <div class="card-body">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" placeholder="Search" aria-label="Search" id="searchInput">
+                            </div>
+                            <table class="table table-bordered table-striped">
+                                <thead class="bg-success text-white">
+                                    <tr>
+                                        <th>Catacomb ID</th>
+                                        <th>Catacomb Details</th>
+                                        <th>Availability Status</th>
+                                        <th>Deceased Information</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="catacombTableBody">
+                                    @foreach (var catacomb in Model)
+                                    {
+                                        <tr id="catacomb-@catacomb.Id">
+                                            <td>@catacomb.CatacombID</td>
+                                            <td><a href="#" class="view-link" data-id="@catacomb.Id" onclick="viewCatacomb('@catacomb.Id')">View</a></td>
+                                            <td>@catacomb.AvailabilityStatus</td>
+                                            <td>@catacomb.DeceasedInformation</td>
+                                            <td>
+                                                <button class="btn btn-warning btn-sm update-btn" onclick="editCatacomb('@catacomb.Id')">Update</button>
+                                                <button class="btn btn-danger btn-sm delete-btn" onclick="deleteCatacomb('@catacomb.Id')">Delete</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if (!Model.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="5" class="text-center">No catacomb records available</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="~/js/scripts.js"></script>
+
+    <script>
+        // Add Catacomb
+        function addCatacomb() {
+            const catacombData = {
+                CatacombID: document.getElementById('catacombID').value, // Ensure the ID is included
+                CatacombName: document.getElementById('catacombName').value,
+                Location: document.getElementById('location').value,
+                DateCreated: document.getElementById('dateCreated').value
+            };
+
+            fetch('/Catacomb/Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(catacombData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Catacomb added successfully! ID: ' + data.catacombID); // Display the generated ID
+                    location.reload(); // Reload the page to reflect new data
+                } else {
+                    alert('Error adding catacomb: ' + data.message);
+                }
+            });
+        }
+
+        // View Catacomb Details
+        function viewCatacomb(id) {
+            fetch(`/Catacomb/Details/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const catacomb = data.catacomb;
+                document.getElementById('catacombID').value = catacomb.CatacombID;
+                document.getElementById('catacombName').value = catacomb.CatacombName;
+                document.getElementById('location').value = catacomb.Location;
+                document.getElementById('dateCreated').value = catacomb.DateCreated.split('T')[0];
+            });
+        }
+
+        // Edit Catacomb
+        function editCatacomb(id) {
+            const catacombData = {
+                CatacombID: document.getElementById('catacombID').value,
+                CatacombName: document.getElementById('catacombName').value,
+                Location: document.getElementById('location').value,
+                DateCreated: document.getElementById('dateCreated').value
+            };
+
+            fetch(`/Catacomb/Edit/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(catacombData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Catacomb updated successfully!');
+                    location.reload(); // Reload the page to reflect updates
+                } else {
+                    alert('Error updating catacomb: ' + data.message);
+                }
+            });
+        }
+
+        // Delete Catacomb
+        function deleteCatacomb(id) {
+            if (confirm('Are you sure you want to delete this catacomb?')) {
+                fetch(`/Catacomb/Delete/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Catacomb deleted successfully!');
+                        document.getElementById(`catacomb-${id}`).remove();
+                    } else {
+                        alert('Error deleting catacomb');
+                    }
+                });
+            }
+        }
+
+    </script>
+
+</body>
+</html>

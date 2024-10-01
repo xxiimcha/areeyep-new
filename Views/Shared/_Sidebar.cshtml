@@ -1,0 +1,130 @@
+﻿@using Microsoft.AspNetCore.Http
+@{
+    // Fetch the user's role from the session
+    var userRole = Context.Session.GetString("UserRole");
+}
+
+<div id="layoutSidenav_nav">
+    <nav class="sb-sidenav accordion sb-sidenav-dark bg-success" id="sidenavAccordion">
+        <!-- Changed background color to green -->
+        <div class="sb-sidenav-menu">
+            <div class="nav" style="color: white;">
+                <!-- Ensuring the text remains white -->
+                @* Admin Role Sidebar Menu *@
+                @if (userRole == "admin")
+                {
+                    <a class="nav-link text-white" href="/Admin/Dashboard">
+                        <!-- Added 'text-white' class to make text white -->
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
+                        Home
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/User">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
+                        User
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Application">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-compass"></i></div>
+                        Application
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Payments">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
+                        Payments
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Notifications">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
+                        Notifications
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Services">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-briefcase"></i></div>
+                        Services
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Catacombs">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-layer-group"></i></div>
+                        Catacombs
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Reports">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-cogs"></i></div>
+                        Generate Reports
+                    </a>
+                }
+
+                @* Staff Role Sidebar Menu *@
+                @if (userRole == "staff")
+                {
+                    <a class="nav-link text-white" href="/Staff/Dashboard">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
+                        Home
+                    </a>
+                    <a class="nav-link text-white" href="/Staff/Clients">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
+                        Clients
+                    </a>
+                    <a class="nav-link text-white" href="/Staff/Payments">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
+                        Payments
+                    </a>
+                }
+
+                @* LGU Role Sidebar Menu *@
+                @if (userRole == "lgu")
+                {
+                    <a class="nav-link text-white" href="/LGU/Dashboard">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
+                        Home
+                    </a>
+                    <a class="nav-link text-white" href="/LGU/Applications">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-compass"></i></div>
+                        Applications
+                    </a>
+                    <a class="nav-link text-white" href="/LGU/Reports">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-cogs"></i></div>
+                        Generate Reports
+                    </a>
+                }
+
+                @* Client Role Sidebar Menu *@
+                @if (userRole == "client")
+                {
+                    <a class="nav-link text-white" href="/Client/Dashboard">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
+                        Home
+                    </a>
+                    <a class="nav-link text-white" href="/Client/ManageRelatives">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
+                        Manage Relatives
+                    </a>
+
+                    <!-- Dropdown Menu for Burials -->
+                    <a class="nav-link text-white collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#burialsCollapse" aria-expanded="false" aria-controls="burialsCollapse">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-cross"></i></div>
+                        Burials
+                        <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                    </a>
+                    <div class="collapse" id="burialsCollapse" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
+                        <nav class="sb-sidenav-menu-nested nav">
+                            <a class="nav-link text-white" href="/Client/BurialApplication">Application Burial</a>
+                            <a class="nav-link text-white" href="/Client/ManageApplications">Manage Applications</a>
+                        </nav>
+                    </div>
+
+                    <a class="nav-link text-white" href="/Client/ServiceRequest">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-envelope"></i></div>
+                        Service Request
+                    </a>
+                    <a class="nav-link text-white" href="/Client/Renewals">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-clock"></i></div>
+                        Renewals
+                    </a>
+                    <a class="nav-link text-white" href="/Client/PaymentHistory">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
+                        Payments
+                    </a>
+                    <a class="nav-link text-white" href="/Client/Notification">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
+                        Notification
+                    </a>
+                }
+            </div>
+        </div>
+    </nav>
+</div>

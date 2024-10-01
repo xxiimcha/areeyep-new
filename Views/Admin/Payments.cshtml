@@ -1,0 +1,186 @@
+﻿@model IEnumerable<AreEyeP.Models.Payment>
+@{
+    Layout = null;  // Not using the _Layout.cshtml file for this specific page
+    ViewData["Title"] = "User Management";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
+</head>
+<body class="sb-nav-fixed">
+    <!-- Render the Header Partial -->
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav">
+        <!-- Render the Sidebar Partial -->
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">Payment Management</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item active">Payment Management</li>
+                    </ol>
+
+                    <!-- Add Payment Button -->
+                    <div class="d-flex justify-content-end mb-4">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+                            <i class="fas fa-file-upload"></i> Upload Payment Details
+                        </button>
+                    </div>
+
+                    <!-- Payment List Table -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Mode of Payment</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    int i = 1;
+                                    foreach (var payment in Model)
+                                    {
+                                        <tr>
+                                            <td>@i</td>
+                                            <td>@payment.PaymentMode</td> <!-- Assuming 'PaymentMode' is a property in your Payment model -->
+                                            <td>
+                                                <button class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</button>
+                                                <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
+                                            </td>
+                                        </tr>
+                                        i++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5">No payments found.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Add Payment Modal -->
+                    <div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="addPaymentModalLabel">Upload Payment Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="addPaymentForm" enctype="multipart/form-data">
+                                        <div class="mb-3">
+                                            <label for="modeOfPayment" class="form-label">Mode of Payment</label>
+                                            <select class="form-select" id="modeOfPayment" required onchange="togglePaymentFields()">
+                                                <option value="" disabled selected>Select Mode of Payment</option>
+                                                <option value="ewallet">eWallet</option>
+                                                <option value="bank">Bank Transfer</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- eWallet Fields -->
+                                        <div id="ewalletFields" style="display:none;">
+                                            <div class="mb-3">
+                                                <label for="ewalletProvider" class="form-label">eWallet Provider</label>
+                                                <input type="text" class="form-control" id="ewalletProvider" placeholder="Enter eWallet Provider (e.g., GCash)" />
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="qrCode" class="form-label">Upload QR Code</label>
+                                                <input type="file" class="form-control" id="qrCode" />
+                                            </div>
+                                        </div>
+
+                                        <!-- Bank Transfer Fields -->
+                                        <div id="bankFields" style="display:none;">
+                                            <div class="mb-3">
+                                                <label for="bankName" class="form-label">Bank Name</label>
+                                                <input type="text" class="form-control" id="bankName" placeholder="Enter Bank Name" />
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="accountNumber" class="form-label">Account Number</label>
+                                                <input type="text" class="form-control" id="accountNumber" placeholder="Enter Account Number" />
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="bankBranch" class="form-label">Bank Branch</label>
+                                                <input type="text" class="form-control" id="bankBranch" placeholder="Enter Bank Branch" />
+                                            </div>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-primary">Upload Payment</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    @Html.Partial("_ScriptLinks")
+
+    <!-- Modal Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Toggle payment fields based on the selected mode of payment
+            function togglePaymentFields() {
+                var modeOfPayment = document.getElementById('modeOfPayment').value;
+                var ewalletFields = document.getElementById('ewalletFields');
+                var bankFields = document.getElementById('bankFields');
+
+                // Show relevant fields based on the selected mode of payment
+                if (modeOfPayment === 'ewallet') {
+                    ewalletFields.style.display = 'block';
+                    bankFields.style.display = 'none';
+                } else if (modeOfPayment === 'bank') {
+                    ewalletFields.style.display = 'none';
+                    bankFields.style.display = 'block';
+                } else {
+                    ewalletFields.style.display = 'none';
+                    bankFields.style.display = 'none';
+                }
+            }
+
+            // Attach event listener to form submission
+            var addPaymentForm = document.getElementById('addPaymentForm');
+            if (addPaymentForm) {
+                addPaymentForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    
+                    // Simulate successful payment upload
+                    toastr.success('Payment details uploaded successfully!', 'Success');
+                    
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addPaymentModal'));
+                    modal.hide();
+                });
+            }
+
+            // Attach event listener to toggle payment fields
+            var modeOfPaymentDropdown = document.getElementById('modeOfPayment');
+            if (modeOfPaymentDropdown) {
+                modeOfPaymentDropdown.addEventListener('change', togglePaymentFields);
+            }
+        });
+    </script>
+</body>
+</html>
