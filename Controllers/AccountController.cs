@@ -33,6 +33,16 @@ namespace AreEyeP.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult Logout()
+        {
+            // Clear the user session
+            HttpContext.Session.Clear();
+
+            // Redirect to the login page
+            return RedirectToAction("Index", "Home");
+        }
+
         // GET: /Account/Login
         [HttpGet]
         public IActionResult Login()

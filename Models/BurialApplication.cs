@@ -58,7 +58,7 @@ namespace AreEyeP.Models
 
         // File attachment path
         [Display(Name = "Attachment Path")]
-        public string AttachmentPath { get; set; }
+        public string? AttachmentPath { get; set; }  // Make this nullable
 
         // Burial Details
         [Required]

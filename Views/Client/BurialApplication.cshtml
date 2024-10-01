@@ -1,28 +1,36 @@
 ﻿@model AreEyeP.Models.BurialApplication
 
+@{
+    Layout = null;  // Not using the _Layout.cshtml file for this specific page
+    ViewData["Title"] = "Burial Application";
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Burial Application</title>
-    <link href="~/css/styles.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
 </head>
 <body class="sb-nav-fixed">
-    <!-- Include the Header Partial -->
+    <!-- Render the Header Partial -->
     @Html.Partial("_Header")
 
     <div id="layoutSidenav">
-        <!-- Include the Sidebar Partial -->
+        <!-- Render the Sidebar Partial -->
         @Html.Partial("_Sidebar")
-
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid px-4">
                     <h2 class="text-center mt-4 mb-4">Burial Application</h2>
-                    <form asp-action="SubmitBurialApplication" asp-controller="Client" method="post" enctype="multipart/form-data">
+                    <div id="errorAlert" class="alert alert-danger d-none"></div> <!-- Error Alert -->
+                    <div id="successAlert" class="alert alert-success d-none"></div> <!-- Success Alert -->
+
+                    <form id="burialApplicationForm" enctype="multipart/form-data" method="post">
+                        @Html.AntiForgeryToken()
                         <div class="card shadow-lg">
                             <div class="card-body">
                                 <div class="row">
@@ -34,23 +42,28 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="form-group">
-                                                    <label for="ApplicantFirstName" class="form-label">Full Name</label>
+                                                    <label asp-for="FirstName" class="form-label">Full Name</label>
                                                     <div class="input-group">
-                                                        <input class="form-control" type="text" id="ApplicantFirstName" name="ApplicantFirstName" placeholder="First Name" required />
-                                                        <input class="form-control ms-2" type="text" id="ApplicantLastName" name="ApplicantLastName" placeholder="Last Name" required />
+                                                        <input asp-for="FirstName" class="form-control" placeholder="First Name" value="John" required />
+                                                        <input asp-for="LastName" class="form-control ms-2" placeholder="Last Name" value="Doe" required />
                                                     </div>
+                                                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                                                    <span asp-validation-for="LastName" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="Address" class="form-label">Address</label>
-                                                    <input class="form-control" type="text" id="Address" name="Address" placeholder="Barangay gun ob, Mandaue Cebu City" required />
+                                                    <label asp-for="Address" class="form-label">Address</label>
+                                                    <input asp-for="Address" class="form-control" value="123 Sample Street, City" required />
+                                                    <span asp-validation-for="Address" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="RelationshipToDeceased" class="form-label">Relationship to Deceased</label>
-                                                    <input class="form-control" type="text" id="RelationshipToDeceased" name="RelationshipToDeceased" placeholder="(e.g., spouse, child, friend)" required />
+                                                    <label asp-for="RelationshipToDeceased" class="form-label">Relationship to Deceased</label>
+                                                    <input asp-for="RelationshipToDeceased" class="form-control" value="Brother" required />
+                                                    <span asp-validation-for="RelationshipToDeceased" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="ContactInformation" class="form-label">Contact Information</label>
-                                                    <input class="form-control" type="text" id="ContactInformation" name="ContactInformation" placeholder="(Phone Number, Email Address)" required />
+                                                    <label asp-for="ContactInformation" class="form-label">Contact Information</label>
+                                                    <input asp-for="ContactInformation" class="form-control" value="123-456-7890" required />
+                                                    <span asp-validation-for="ContactInformation" class="text-danger"></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -64,19 +77,22 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="form-group">
-                                                    <label for="BurialDate" class="form-label">Date of Burial</label>
-                                                    <input class="form-control" type="date" id="BurialDate" name="BurialDate" required />
+                                                    <label asp-for="DateOfBurial" class="form-label">Date of Burial</label>
+                                                    <input asp-for="DateOfBurial" class="form-control" value="2024-10-05" required />
+                                                    <span asp-validation-for="DateOfBurial" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
                                                     <label>Time of Burial</label>
                                                     <div class="input-group">
-                                                        <input class="form-control" type="time" name="StartTime" required />
-                                                        <input class="form-control ms-2" type="time" name="EndTime" required />
+                                                        <input asp-for="StartTime" class="form-control" value="09:00" required />
+                                                        <input asp-for="EndTime" class="form-control ms-2" value="10:00" required />
                                                     </div>
+                                                    <span asp-validation-for="StartTime" class="text-danger"></span>
+                                                    <span asp-validation-for="EndTime" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="SpecialInstructions" class="form-label">Special Instructions</label>
-                                                    <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" placeholder="Specify..." rows="3"></textarea>
+                                                    <label asp-for="SpecialInstructions" class="form-label">Special Instructions</label>
+                                                    <textarea asp-for="SpecialInstructions" class="form-control" rows="3">Ensure the burial is in the morning.</textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -90,45 +106,48 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="form-group">
-                                                    <label for="DeceasedFirstName" class="form-label">Full Name</label>
+                                                    <label asp-for="DeceasedFirstName" class="form-label">Full Name</label>
                                                     <div class="input-group">
-                                                        <input class="form-control" type="text" id="DeceasedFirstName" name="DeceasedFirstName" placeholder="First Name" required />
-                                                        <input class="form-control ms-2" type="text" id="DeceasedLastName" name="DeceasedLastName" placeholder="Last Name" required />
+                                                        <input asp-for="DeceasedFirstName" class="form-control" placeholder="First Name" value="Jane" required />
+                                                        <input asp-for="DeceasedLastName" class="form-control ms-2" placeholder="Last Name" value="Smith" required />
                                                     </div>
+                                                    <span asp-validation-for="DeceasedFirstName" class="text-danger"></span>
+                                                    <span asp-validation-for="DeceasedLastName" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label>Your Gender</label>
+                                                    <label asp-for="Gender" class="form-label">Gender</label>
                                                     <div class="d-flex">
                                                         <div class="form-check me-3">
-                                                            <input class="form-check-input" type="radio" name="Gender" value="Male" required />
-                                                            <label class="form-check-label">Male</label>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="Gender" value="Female" required />
+                                                            <input asp-for="Gender" class="form-check-input" type="radio" value="Female" checked required />
                                                             <label class="form-check-label">Female</label>
                                                         </div>
                                                     </div>
+                                                    <span asp-validation-for="Gender" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="DateOfBirth" class="form-label">Date of Birth</label>
-                                                    <input class="form-control" type="date" id="DateOfBirth" name="DateOfBirth" required />
+                                                    <label asp-for="DateOfBirth" class="form-label">Date of Birth</label>
+                                                    <input asp-for="DateOfBirth" class="form-control" value="1990-05-15" required />
+                                                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="DateOfDeath" class="form-label">Date of Death</label>
-                                                    <input class="form-control" type="date" id="DateOfDeath" name="DateOfDeath" required />
+                                                    <label asp-for="DateOfDeath" class="form-label">Date of Death</label>
+                                                    <input asp-for="DateOfDeath" class="form-control" value="2024-09-30" required />
+                                                    <span asp-validation-for="DateOfDeath" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="CauseOfDeath" class="form-label">Cause of Death</label>
-                                                    <input class="form-control" type="text" id="CauseOfDeath" name="CauseOfDeath" placeholder="Cause of death" required />
+                                                    <label asp-for="CauseOfDeath" class="form-label">Cause of Death</label>
+                                                    <input asp-for="CauseOfDeath" class="form-control" value="Natural Causes" required />
+                                                    <span asp-validation-for="CauseOfDeath" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="Religion" class="form-label">Religion</label>
-                                                    <input class="form-control" type="text" id="Religion" name="Religion" value="Roman Catholic" readonly />
+                                                    <label asp-for="Religion" class="form-label">Religion</label>
+                                                    <input asp-for="Religion" class="form-control" value="Roman Catholic" readonly />
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label for="Attachment" class="form-label">Attach Requirement (Death certificate, ID of the Applicant)</label>
-                                                    <input class="form-control-file" type="file" id="Attachment" name="Attachment" required />
+                                                    <label asp-for="AttachmentPath" class="form-label">Attach Requirement (Death certificate, ID of the Applicant)</label>
+                                                    <input class="form-control-file" type="file" id="Attachment" name="AttachmentPath" />
                                                 </div>
+
                                             </div>
                                         </div>
                                     </div>
@@ -148,7 +167,56 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-    <script src="~/js/scripts.js"></script>
+    @Html.Partial("_ScriptLinks")
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#burialApplicationForm').on('submit', function (event) {
+                event.preventDefault();
+
+                var formData = new FormData(this);
+
+                $.ajax({
+                    url: '/BurialApplication/Create',
+                    type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        if (response.success) {
+                            $('#successAlert').removeClass('d-none').text('Burial application submitted successfully!');
+                            $('#errorAlert').addClass('d-none');
+                            $('#burialApplicationForm')[0].reset();
+                            setTimeout(function () {
+                                window.location.href = '/Client/Dashboard';
+                            }, 2000);
+                        } else {
+                            let errorMessage = 'Error: ' + response.message;
+                            if (response.errors && response.errors.length > 0) {
+                                errorMessage += '<ul>';
+                                response.errors.forEach(error => {
+                                    errorMessage += `<li>${error}</li>`;
+                                });
+                                errorMessage += '</ul>';
+                            }
+                            $('#errorAlert').removeClass('d-none').html(errorMessage);
+                            $('#successAlert').addClass('d-none');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = `Submission error details: Error ${xhr.status}: ${error}\nResponse Text: ${xhr.responseText}`;
+                        $('#errorAlert').removeClass('d-none').html(errorMessage);
+                        $('#successAlert').addClass('d-none');
+                        console.error(errorMessage);
+                    }
+                });
+            });
+        });
+
+    </script>
+
 </body>
 </html>
