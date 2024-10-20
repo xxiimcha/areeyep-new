@@ -1,5 +1,252 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model IEnumerable<AreEyeP.Models.BurialApplication>
 @{
+    Layout = null;  // Not using the _Layout.cshtml file for this specific page
+    ViewData["Title"] = "Burial Applications";
 }
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
+</head>
+<body class="sb-nav-fixed">
+    <!-- Render the Header Partial -->
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav">
+        <!-- Render the Sidebar Partial -->
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">Burial Applications</h1>
+
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-tabs" id="applicationTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">Pending</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pending-payment-tab" data-bs-toggle="tab" data-bs-target="#pending-payment" type="button" role="tab" aria-controls="pending-payment" aria-selected="false">Pending Payment</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">Approved</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="declined-tab" data-bs-toggle="tab" data-bs-target="#declined" type="button" role="tab" aria-controls="declined" aria-selected="false">Declined</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-4" id="applicationTabsContent">
+                        @foreach (var status in new[] { "Pending", "Pending Payment", "Approved", "Declined" })
+                        {
+                            <div class="tab-pane fade @(status == "Pending" ? "show active" : "")" id="@status.ToLower().Replace(" ", "-")" role="tabpanel" aria-labelledby="@status.ToLower().Replace(" ", "-")-tab">
+                                @if (Model.Any(m => m.Status == status))
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" id="@status.Replace(" ", "")Table">
+                                            <thead class="bg-primary text-white">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>First Name</th>
+                                                    <th>Last Name</th>
+                                                    <th>Date of Death</th>
+                                                    <th>Date of Burial</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    int i = 1;
+                                                    foreach (var application in Model.Where(m => m.Status == status))
+                                                    {
+                                                        <tr>
+                                                            <td>@i</td>
+                                                            <td>@application.FirstName</td>
+                                                            <td>@application.LastName</td>
+                                                            <td>@application.DateOfDeath.ToShortDateString()</td>
+                                                            <td>@application.DateOfBurial.ToShortDateString()</td>
+                                                            <td>
+                                                                <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#applicationModal" onclick="viewApplication(@application.Id)">View</button>
+                                                            </td>
+                                                        </tr>
+                                                        i++;
+                                                    }
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p>No @status.ToLower() applications available.</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal for Viewing Application Details -->
+    <div class="modal fade" id="applicationModal" tabindex="-1" aria-labelledby="applicationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="applicationModalLabel">Burial Application Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <h6 class="text-primary">Deceased Information</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label><strong>First Name:</strong></label>
+                                <p id="deceasedFirstName"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label><strong>Last Name:</strong></label>
+                                <p id="deceasedLastName"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label><strong>Address:</strong></label>
+                                <p id="address"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label><strong>Cause of Death:</strong></label>
+                                <p id="causeOfDeath"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label><strong>Date of Death:</strong></label>
+                                <p id="dateOfDeath"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label><strong>Date of Burial:</strong></label>
+                                <p id="dateOfBurial"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label><strong>Religion:</strong></label>
+                                <p id="religion"></p>
+                            </div>
+                            <div class="col-md-12">
+                                <label><strong>Special Instructions:</strong></label>
+                                <p id="specialInstructions"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
+                    <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="declineApplication()">Decline</button>
+                    <button id="confirmPaymentButton" class="btn btn-primary" style="display: none;" onclick="confirmPayment()">Confirm Payment</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    @Html.Partial("_ScriptLinks")
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#pendingTable, #pendingPaymentTable, #approvedTable, #declinedTable').DataTable(); // Initialize DataTables
+        });
+
+        function viewApplication(id) {
+            console.log("Fetching details for application ID:", id); // Log the ID being fetched
+            fetch(`/Application/GetDetails?id=${id}`)
+                .then(response => {
+                    console.log("Response received:", response); // Log the response object
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Parsed data:", data); // Log the parsed JSON data
+                    if (data.success) {
+                        const application = data.application;
+
+                        // Fill in modal fields with the correct data from the response
+                        document.getElementById("deceasedFirstName").textContent = application.firstName;
+                        document.getElementById("deceasedLastName").textContent = application.lastName;
+                        document.getElementById("address").textContent = application.address;
+                        document.getElementById("causeOfDeath").textContent = application.causeOfDeath;
+                        document.getElementById("dateOfDeath").textContent = application.dateOfDeath;
+                        document.getElementById("dateOfBurial").textContent = application.dateOfBurial;
+                        document.getElementById("religion").textContent = application.religion;
+                        document.getElementById("specialInstructions").textContent = application.specialInstructions;
+
+                        // Store the application ID and status in the modal for use when approving/declining/confirming
+                        $('#applicationModal').data('applicationId', id);
+                        $('#applicationModal').data('applicationStatus', application.status);
+
+                        // Hide all buttons initially
+                        $('#approveButton').hide();
+                        $('#declineButton').hide();
+                        $('#confirmPaymentButton').hide();
+
+                        // Show the appropriate buttons based on the application status
+                        if (application.status === "Pending") {
+                            $('#approveButton').show();
+                            $('#declineButton').show();
+                        } else if (application.status === "Pending Payment") {
+                            $('#confirmPaymentButton').show();
+                        }
+
+                        // Show the modal
+                        $('#applicationModal').modal('show');
+                    } else {
+                        console.error("Failed to load application details:", data.message);
+                        alert("Failed to load application details.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching application details:", error);
+                });
+        }
+
+        function approveApplication() {
+            const applicationId = $('#applicationModal').data('applicationId');
+            updateApplicationStatus(applicationId, "Pending Payment");
+        }
+
+        function declineApplication() {
+            const applicationId = $('#applicationModal').data('applicationId');
+            updateApplicationStatus(applicationId, "Declined");
+        }
+
+        function confirmPayment() {
+            const applicationId = $('#applicationModal').data('applicationId');
+            updateApplicationStatus(applicationId, "Approved");
+        }
+
+        function updateApplicationStatus(id, status) {
+            fetch(`/Application/UpdateStatus`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id, status: status })
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        toastr.success(result.message);
+                        location.reload();
+                    } else {
+                        toastr.error(result.message);
+                    }
+                })
+                .catch(error => toastr.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

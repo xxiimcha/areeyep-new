@@ -31,7 +31,6 @@ namespace AreEyeP.Controllers
             return View();
         }
 
-        // POST: Payment/AddPayment
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPayment(Payment payment, IFormFile QrCode)
@@ -62,12 +61,12 @@ namespace AreEyeP.Controllers
                 await _context.SaveChangesAsync();
 
                 // Redirect to the payment listing page
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = true, message = "Payment added successfully." });
             }
 
-            // If validation fails, return to the Add Payment view with validation errors
-            return View(payment);
+            return Json(new { success = false, message = "Failed to add payment. Please check your input." });
         }
+
 
         // GET: Payment/Details/5
         public async Task<IActionResult> Details(int id)

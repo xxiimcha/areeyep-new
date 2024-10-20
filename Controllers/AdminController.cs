@@ -17,6 +17,13 @@ namespace AreEyeP.Controllers
             _context = context;
         }
 
+        // GET: /Admin/Application
+        public IActionResult Application()
+        {
+            var applications = _context.BurialApplications.ToList();
+            return View(applications);
+        }
+
         // GET: Admin/Dashboard
         public IActionResult Dashboard()
         {
