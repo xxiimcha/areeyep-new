@@ -37,36 +37,43 @@ namespace AreEyeP.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Handle file upload for QR code
-                if (QrCode != null && QrCode.Length > 0)
+                try
                 {
-                    var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-                    if (!Directory.Exists(uploadsDirectory))
+                    // Handle file upload for QR code
+                    if (QrCode != null && QrCode.Length > 0)
                     {
-                        Directory.CreateDirectory(uploadsDirectory);
+                        var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                        if (!Directory.Exists(uploadsDirectory))
+                        {
+                            Directory.CreateDirectory(uploadsDirectory);
+                        }
+
+                        var filePath = Path.Combine(uploadsDirectory, QrCode.FileName);
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await QrCode.CopyToAsync(stream);
+                        }
+
+                        // Save the relative path of the QR code image
+                        payment.QrCodePath = "/uploads/" + QrCode.FileName;
                     }
 
-                    var filePath = Path.Combine(uploadsDirectory, QrCode.FileName);
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await QrCode.CopyToAsync(stream);
-                    }
+                    // Save the payment record to the database
+                    _context.Payments.Add(payment);
+                    await _context.SaveChangesAsync();
 
-                    // Save the relative path of the QR code image
-                    payment.QrCodePath = "/uploads/" + QrCode.FileName;
+                    // Return a JSON response indicating success
+                    return Json(new { success = true, message = "Payment details uploaded successfully!" });
                 }
-
-                // Save the payment record to the database
-                _context.Payments.Add(payment);
-                await _context.SaveChangesAsync();
-
-                // Redirect to the payment listing page
-                return Json(new { success = true, message = "Payment added successfully." });
+                catch (Exception ex)
+                {
+                    return Json(new { success = false, message = ex.Message });
+                }
             }
 
-            return Json(new { success = false, message = "Failed to add payment. Please check your input." });
+            // If validation fails, return a JSON response with errors
+            return Json(new { success = false, message = "Invalid payment details provided." });
         }
-
 
         // GET: Payment/Details/5
         public async Task<IActionResult> Details(int id)

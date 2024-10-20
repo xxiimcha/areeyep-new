@@ -17,6 +17,15 @@ namespace AreEyeP.Controllers
             _context = context;
         }
 
+        // GET: Admin/Services
+        [HttpGet]
+        public async Task<IActionResult> Services()
+        {
+            var services = await _context.Services.ToListAsync();
+            // Specify the path to the view in the Shared folder
+            return View("/Views/Shared/Services.cshtml", services);
+        }
+
         // GET: /Admin/Application
         public IActionResult Application()
         {
