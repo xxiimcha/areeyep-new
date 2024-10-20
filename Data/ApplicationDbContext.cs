@@ -15,6 +15,7 @@ namespace AreEyeP.Data
         public DbSet<Catacomb> Catacombs { get; set; }
         public DbSet<Schedule> Schedules { get; set; }
         public DbSet<Service> Services { get; set; }
+        public DbSet<ServiceRequest> ServiceRequests { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

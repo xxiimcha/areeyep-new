@@ -24,6 +24,25 @@ namespace AreEyeP.Controllers
             return View();
         }
 
+        // GET: /Client/ServiceRequest
+        [HttpGet("/Client/ServiceRequest/Create")]
+        public async Task<IActionResult> Create()
+        {
+            // Fetch the current user's ID from the session
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Fetch the services from the database
+            var services = await _context.Services.ToListAsync();
+
+            // Pass the services to the view
+            return View("ServiceRequest", services);
+        }
+
         // GET: /Client/BurialApplication
         public IActionResult BurialApplication()
         {

@@ -119,10 +119,19 @@
                         </nav>
                     </div>
 
-                    <a class="nav-link text-white" href="/Client/ServiceRequest">
+                    <!-- Dropdown Menu for Service Request -->
+                    <a class="nav-link text-white collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#serviceRequestCollapse" aria-expanded="false" aria-controls="serviceRequestCollapse">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-envelope"></i></div>
                         Service Request
+                        <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                     </a>
+                    <div class="collapse" id="serviceRequestCollapse" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                        <nav class="sb-sidenav-menu-nested nav">
+                            <a class="nav-link text-white" href="/Client/ServiceRequest/Requests">Requests</a>
+                            <a class="nav-link text-white" href="/Client/ServiceRequest/Create">Create New</a>
+                        </nav>
+                    </div>
+
                     <a class="nav-link text-white" href="/Client/Renewals">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-clock"></i></div>
                         Renewals

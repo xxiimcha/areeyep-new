@@ -1,0 +1,191 @@
+﻿@model IEnumerable<AreEyeP.Models.Service>
+@{
+    ViewData["Title"] = "Service Request";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    @Html.Partial("_CSSLinks") <!-- Include your CSS partial here -->
+    <style>
+        .full-width-container {
+            padding: 0;
+            margin: 0;
+            max-width: 100%;
+        }
+
+        .card {
+            margin: 0 auto;
+            border-radius: 0;
+        }
+
+        .form-control, .form-select {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="sb-nav-fixed">
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav" class="full-width-container">
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-0">
+                    <h1 class="mt-4">Service Request</h1>
+
+                    <!-- Services Offered Table -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            Services Offered
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered table-hover">
+                                <thead class="bg-primary text-white">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Service Name</th>
+                                        <th>Description</th>
+                                        <th>Price Range</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model != null && Model.Any())
+                                    {
+                                        int i = 1;
+                                        foreach (var service in Model)
+                                        {
+                                            <tr>
+                                                <td>@i</td>
+                                                <td>@service.ServiceName</td>
+                                                <td>@service.Description</td>
+                                                <td>PHP @service.MinPrice - PHP @service.MaxPrice</td>
+                                            </tr>
+                                            i++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="4">No services available at the moment.</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Service Request Form -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            Service Information
+                        </div>
+                        <div class="card-body"> 
+                            <form id="serviceRequestForm" method="post">
+                                @Html.AntiForgeryToken()
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="catacombId" class="form-label">Catacomb ID</label>
+                                        <input type="text" class="form-control" id="catacombId" name="CatacombId" placeholder="Deceased ID" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="dateOfService" class="form-label">Date of Service</label>
+                                        <input type="date" class="form-control" id="dateOfService" name="DateOfService" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="serviceType" class="form-label">Service Type</label>
+                                        <select class="form-select" id="serviceType" name="ServiceType" required>
+                                            <option selected disabled>Choose Option</option>
+                                            @foreach (var service in Model)
+                                            {
+                                                <option value="@service.Id">@service.ServiceName</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="urgency" class="form-label">Urgency Level</label>
+                                        <div>
+                                            <input type="radio" id="low" name="UrgencyLevel" value="Low" required /> <label for="low">Low</label>
+                                            <input type="radio" id="medium" name="UrgencyLevel" value="Medium" required /> <label for="medium">Medium</label>
+                                            <input type="radio" id="high" name="UrgencyLevel" value="High" required /> <label for="high">High</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="specialInstructions" class="form-label">Special Instructions</label>
+                                    <textarea class="form-control" id="specialInstructions" name="SpecialInstructions" rows="3" placeholder="Specify..."></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" onclick="resetForm()">Cancel</button>
+                                    <button type="button" class="btn btn-success" onclick="submitForm()">Submit</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    @Html.Partial("_ScriptLinks")
+    <script>
+        function resetForm() {
+            document.getElementById('serviceRequestForm').reset();
+        }
+
+        function submitForm() {
+            const form = document.getElementById('serviceRequestForm');
+            const formData = new FormData(form);
+
+            // Get the anti-forgery token value from the hidden input field
+            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (!tokenElement) {
+                console.error("CSRF token not found");
+                toastr.error('CSRF token not found. Please refresh the page and try again.');
+                return;
+            }
+            const tokenValue = tokenElement.value;
+
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch('/ServiceRequest/Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': tokenValue
+                },
+                body: JSON.stringify(jsonData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        toastr.success('Service request submitted successfully!');
+                        resetForm();
+                    } else {
+                        toastr.error(data.message || 'An error occurred. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastr.error('An unexpected error occurred.');
+                });
+        }
+
+    </script>
+</body>
+</html>
