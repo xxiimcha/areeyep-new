@@ -80,6 +80,12 @@ namespace AreEyeP.Controllers
                         model.AttachmentPath = filePath;
                     }
 
+                    // Check if ApplicationId was provided from the form field
+                    if (string.IsNullOrWhiteSpace(model.ApplicationId))
+                    {
+                        return Json(new { success = false, message = "Application ID is required." });
+                    }
+
                     model.CreatedDate = DateTime.UtcNow;
                     model.Status = "Pending";
                     model.UserId = HttpContext.Session.GetInt32("UserId") ?? 0;
@@ -87,7 +93,7 @@ namespace AreEyeP.Controllers
                     _context.BurialApplications.Add(model);
                     await _context.SaveChangesAsync();
 
-                    return Json(new { success = true });
+                    return Json(new { success = true, message = $"Application submitted successfully with ID: {model.ApplicationId}" });
                 }
                 catch (Exception ex)
                 {
@@ -104,43 +110,19 @@ namespace AreEyeP.Controllers
             return Json(new { success = false, message = "Validation failed.", errors = validationErrors });
         }
 
-
         [HttpGet]
-        public async Task<IActionResult> TestInsert()
+        public async Task<IActionResult> GetDetails(int id)
         {
-            try
-            {
-                var testModel = new BurialApplication
-                {
-                    FirstName = "Test",
-                    LastName = "User",
-                    Address = "123 Test Street",
-                    RelationshipToDeceased = "Friend",
-                    ContactInformation = "123-456-7890",
-                    DeceasedFirstName = "Deceased",
-                    DeceasedLastName = "Person",
-                    Gender = "Male",
-                    DateOfBirth = new DateTime(1980, 1, 1),
-                    DateOfDeath = new DateTime(2024, 9, 30),
-                    CauseOfDeath = "Natural Causes",
-                    DateOfBurial = new DateTime(2024, 10, 5),
-                    StartTime = new TimeSpan(9, 0, 0),
-                    EndTime = new TimeSpan(10, 0, 0),
-                    SpecialInstructions = "Test Instructions",
-                    CreatedDate = DateTime.UtcNow,
-                    UserId = HttpContext.Session.GetInt32("UserId") ?? 0,
-                    Status = "Pending"
-                };
+            // Fetch the burial application by ID
+            var application = await _context.BurialApplications.FindAsync(id);
 
-                _context.BurialApplications.Add(testModel);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "Test insertion successful." });
-            }
-            catch (Exception ex)
+            if (application == null)
             {
-                return Json(new { success = false, message = $"An exception occurred during test insertion: {ex.Message}" });
+                return Json(new { success = false, message = "Application not found." });
             }
+
+            // Return the application data as JSON
+            return Json(new { success = true, application });
         }
 
         // GET: /BurialApplication/Edit/5

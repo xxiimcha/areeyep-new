@@ -117,6 +117,9 @@
                             <label for="dateCreated" class="form-label">Date Created</label>
                             <input class="form-control" type="date" id="dateCreated" name="dateCreated" required />
                         </div>
+                        <div class="mb-3">
+                            <div id="map" style="height: 300px;"></div> <!-- Leaflet map div -->
+                        </div>
                         <div class="text-right">
                             <button id="addBtn" class="btn btn-success" type="button" onclick="addCatacomb()">Add</button>
                         </div>
@@ -200,8 +203,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 
     <script>
+        let map, marker;
+
         $(document).ready(function () {
             $('#catacombTable').DataTable(); // Initialize the DataTable
+
+            // Initialize Leaflet map when the modal is shown
+            $('#addCatacombModal').on('shown.bs.modal', function () {
+                if (!map) {
+                    map = L.map('map').setView([14.5995, 120.9842], 13); // Initial view centered on Manila
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+
+                    map.on('click', function (e) {
+                        const { lat, lng } = e.latlng;
+                        const location = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+                        if (marker) {
+                            marker.setLatLng(e.latlng);
+                        } else {
+                            marker = L.marker(e.latlng).addTo(map);
+                        }
+
+                        document.getElementById('location').value = location;
+                    });
+                }
+            });
+
+            $('#addCatacombModal').on('hidden.bs.modal', function () {
+                if (marker) {
+                    map.removeLayer(marker);
+                    marker = null;
+                }
+            });
         });
 
         // Add Catacomb Functionality

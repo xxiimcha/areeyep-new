@@ -8,6 +8,11 @@ namespace AreEyeP.Models
         [Key]
         public int Id { get; set; }
 
+        // New property for Application ID
+        [Required]
+        [Display(Name = "Application ID")]
+        public string ApplicationId { get; set; }
+
         // Applicant Information
         [Required]
         [Display(Name = "Applicant First Name")]
@@ -32,11 +37,11 @@ namespace AreEyeP.Models
         // Deceased Information
         [Required]
         [Display(Name = "Deceased First Name")]
-        public string DeceasedFirstName { get; set; }  // Changed property name to be more specific
+        public string DeceasedFirstName { get; set; }
 
         [Required]
         [Display(Name = "Deceased Last Name")]
-        public string DeceasedLastName { get; set; }  // Changed property name to be more specific
+        public string DeceasedLastName { get; set; }
 
         [Required]
         public string Gender { get; set; }
@@ -54,7 +59,7 @@ namespace AreEyeP.Models
         [Required]
         public string CauseOfDeath { get; set; }
 
-        public string Religion { get; set; } = "Roman Catholic";  // Default to Roman Catholic if not specified
+        public string Religion { get; set; } = "Roman Catholic"; // Default to Roman Catholic if not specified
 
         // File attachment path
         [Display(Name = "Attachment Path")]

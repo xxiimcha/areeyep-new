@@ -27,7 +27,16 @@ namespace AreEyeP.Controllers
         // GET: /Client/BurialApplication
         public IActionResult BurialApplication()
         {
-            return View();
+            // Generate the ApplicationId in the desired format
+            var applicationId = "APP-" + (_context.BurialApplications.Count() + 1).ToString("D4");
+
+            // Create a new instance of the BurialApplication model
+            var model = new BurialApplication
+            {
+                ApplicationId = applicationId // Set the generated ApplicationId
+            };
+
+            return View(model); // Pass the model to the view
         }
 
         // GET: /Client/PaymentHistory

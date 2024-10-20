@@ -7,11 +7,69 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard</title>
-    <!-- Link to your CSS files -->
-    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
-    <link href="~/css/styles.css" rel="stylesheet" />
-    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        /* Make the body and html fill the entire viewport */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Fullscreen map */
+        #leafletMap {
+            width: 100%;
+            height: 100vh; /* 100% of the viewport height */
+        }
+
+        /* Optional: Ensure main content takes the full height */
+        #layoutSidenav_content {
+            height: 100%;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 100px;
+            width: 450px;
+            height: 800px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #ddd;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            background-color: #097969;
+            color: #fff;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-content {
+            padding: 15px;
+        }
+
+            .sidebar-content input {
+                width: 100%;
+                padding: 5px;
+                margin-bottom: 10px;
+            }
+
+        .close-btn {
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 <body class="sb-nav-fixed">
     <!-- Render the Header Partial -->
@@ -23,35 +81,151 @@
 
         <div id="layoutSidenav_content">
             <main>
-                <div class="container-fluid px-4">
-                    <div class="row mt-4">
-                        <div class="col-md-12">
-                            <div class="card mb-4">
-                                <!-- Card Header with Success Theme -->
-                                <div class="card-header bg-success text-white">
-                                    <h4 class="mb-0">Map Location</h4>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Embed Google Maps Iframe -->
-                                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15701.995262908795!2d123.93154788715817!3d10.301906!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x33a999928b6495bf%3A0x83c4fe213e7472b3!2sGun-ob%20Barangay%20Hall!5e0!3m2!1sen!2sph!4v1727741734054!5m2!1sen!2sph"
-                                            width="100%"
-                                            height="450"
-                                            style="border:0;"
-                                            allowfullscreen=""
-                                            loading="lazy"
-                                            referrerpolicy="no-referrer-when-downgrade">
-                                    </iframe>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Fullscreen map -->
+                <div id="leafletMap"></div>
             </main>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-    <script src="~/js/scripts.js"></script>
+    <!-- Sidebar for Catacomb Details -->
+    <div class="sidebar" id="catacombSidebar">
+        <div class="sidebar-header">
+            <h5>Deceased Information/Located</h5>
+            <span class="close-btn" onclick="closeSidebar()">×</span>
+        </div>
+        <div class="sidebar-content">
+            <div>
+                <img src="https://via.placeholder.com/150" alt="Image" style="width: 100%; height: auto; margin-bottom: 15px;">
+            </div>
+            <div>
+                <label>Name:</label>
+                <input type="text" id="name" readonly>
+                <label>ID:</label>
+                <input type="text" id="id" readonly>
+                <label>Catacomb ID:</label>
+                <input type="text" id="catacombId" readonly>
+                <label>Catacomb number:</label>
+                <input type="text" id="catacombNumber" readonly>
+                <label>Block number:</label>
+                <input type="text" id="blockNumber" readonly>
+                <label>Street number:</label>
+                <input type="text" id="streetNumber" readonly>
+                <label>Location Catacomb:</label>
+                <input type="text" id="locationCatacomb" readonly>
+            </div>
+        </div>
+    </div>
+
+    @Html.Partial("_ScriptLinks")
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM fully loaded and parsed');
+
+            // Define custom green and red marker icons
+            const greenIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            const redIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            // Initialize the Leaflet map
+            const map = L.map('leafletMap').setView([14.659648, 120.969960], 13);
+            console.log('Map initialized');
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            console.log('Tile layer added to the map');
+
+            // Add a search bar to the map
+            const geocoder = L.Control.geocoder({
+                defaultMarkGeocode: false
+            }).addTo(map);
+
+            geocoder.on('markgeocode', function (e) {
+                const bbox = e.geocode.bbox;
+                const poly = L.polygon([
+                    bbox.getSouthEast(),
+                    bbox.getNorthEast(),
+                    bbox.getNorthWest(),
+                    bbox.getSouthWest()
+                ]).addTo(map);
+                map.fitBounds(poly.getBounds());
+            });
+
+            // Fetch catacomb locations from the server
+            console.log('Fetching catacomb locations...');
+            fetch('/Catacomb/GetLocations')
+                .then(response => {
+                    console.log('Response received from server', response);
+                    if (!response.ok) {
+                        console.error('Network response was not ok:', response.statusText);
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Data parsed:', data);
+                    if (data.success && data.locations) {
+                        console.log('Locations found:', data.locations);
+                        data.locations.forEach(catacomb => {
+                            const catacombName = catacomb.CatacombName;
+                            const availabilityStatus = catacomb.AvailabilityStatus;
+                            const latitude = catacomb.latitude;
+                            const longitude = catacomb.longitude;
+
+                            const icon = (availabilityStatus === 'Available') ? greenIcon : redIcon;
+
+                            if (latitude && longitude) {
+                                console.log('Adding marker for:', catacombName, latitude, longitude, 'Status:', availabilityStatus);
+                                const marker = L.marker([latitude, longitude], { icon: icon })
+                                    .addTo(map)
+
+                                marker.on('click', function () {
+                                    openSidebar(catacomb);
+                                });
+                            } else {
+                                console.error('Invalid latitude or longitude for:', catacombName);
+                            }
+                        });
+                    } else {
+                        console.error('Error fetching locations:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        function openSidebar(catacomb) {
+            document.getElementById('name').value = catacomb.CatacombName;
+            document.getElementById('id').value = catacomb.ID;
+            document.getElementById('catacombId').value = catacomb.CatacombID;
+            document.getElementById('catacombNumber').value = catacomb.CatacombName;
+            document.getElementById('blockNumber').value = catacomb.CatacombName;
+            document.getElementById('streetNumber').value = catacomb.CatacombName;
+            document.getElementById('locationCatacomb').value = catacomb.Location;
+
+            document.getElementById('catacombSidebar').style.display = 'block';
+        }
+
+        function closeSidebar() {
+            document.getElementById('catacombSidebar').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

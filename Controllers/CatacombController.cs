@@ -146,5 +146,41 @@ namespace AreEyeP.Controllers
                 return Json(new { success = false, message = $"Error: {ex.Message}" });
             }
         }
+
+        [HttpGet]
+        public JsonResult GetLocations()
+        {
+            var catacombs = _context.Catacombs
+                .Select(c => new {
+                    CatacombName = c.CatacombName,
+                    Location = c.Location,
+                    AvailabilityStatus = c.AvailabilityStatus
+                }).ToList();
+
+            var locations = catacombs
+                .Where(c => !string.IsNullOrEmpty(c.Location) && c.Location.Contains(","))
+                .Select(c => {
+                    var cleanedLocation = c.Location.Replace(", ", ",");
+                    var coordinates = cleanedLocation.Split(',');
+                    if (coordinates.Length == 2 &&
+                        double.TryParse(coordinates[0].Trim(), out double latitude) &&
+                        double.TryParse(coordinates[1].Trim(), out double longitude))
+                    {
+                        return new
+                        {
+                            CatacombName = c.CatacombName,
+                            Latitude = latitude,
+                            Longitude = longitude,
+                            AvailabilityStatus = c.AvailabilityStatus
+                        };
+                    }
+
+                    return null;
+                })
+                .Where(c => c != null)
+                .ToList();
+
+            return Json(new { success = true, locations });
+        }
     }
 }

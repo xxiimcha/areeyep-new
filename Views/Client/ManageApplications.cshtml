@@ -1,20 +1,74 @@
 ﻿@model IEnumerable<AreEyeP.Models.BurialApplication>
 
+@{
+    Layout = null;  // Not using the _Layout.cshtml file for this specific page
+    ViewData["Title"] = "Applications";
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manage Applications</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="~/css/styles.css" rel="stylesheet" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
 </head>
+<style>
+    /* Customizing the modal */
+    .custom-modal-content {
+        border-radius: 8px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .custom-modal-header {
+        background-color: #28a745; /* Green background */
+        color: white;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+
+    .gallery-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 4px;
+        object-fit: cover;
+    }
+
+    .doctor-img {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .direction-icon {
+        width: 25px;
+        height: 25px;
+        margin-left: 5px;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    strong {
+        color: #28a745; /* Green color for strong labels */
+    }
+
+    p {
+        margin: 0;
+        color: #6c757d;
+    }
+
+</style>
 <body class="sb-nav-fixed">
-    <!-- Include the Header Partial -->
+    <!-- Render the Header Partial -->
     @Html.Partial("_Header")
 
     <div id="layoutSidenav">
-        <!-- Include the Sidebar Partial -->
+        <!-- Render the Sidebar Partial -->
         @Html.Partial("_Sidebar")
 
         <div id="layoutSidenav_content">
@@ -46,14 +100,33 @@
                                             foreach (var application in Model)
                                             {
                                                 <tr>
-                                                    <td>@application.Id</td>
-                                                    <td>@application.FirstName @application.LastName</td>
+                                                    <td>@application.ApplicationId</td>
+                                                    <td>@application.DeceasedFirstName @application.DeceasedLastName</td>
                                                     <td>@application.DateOfBurial.ToString("yyyy-MM-dd")</td>
-                                                    <td>@application.StartTime</td>
-                                                    <td>@application.EndTime</td>
-                                                    <td>@application.Status</td>
+                                                    <td>@application.StartTime.ToString(@"hh\:mm")</td>
+                                                    <td>@application.EndTime.ToString(@"hh\:mm")</td>
                                                     <td>
-                                                        <a href="@Url.Action("ViewApplication", "Client", new { id = application.Id })" class="btn btn-primary btn-sm">View</a>
+                                                        @if (application.Status == "Pending")
+                                                        {
+                                                            <span class="badge bg-warning text-dark">Pending</span>
+                                                        }
+                                                        else if (application.Status == "Approved")
+                                                        {
+                                                            <span class="badge bg-success">Approved</span>
+                                                        }
+                                                        else if (application.Status == "Rejected")
+                                                        {
+                                                            <span class="badge bg-danger">Rejected</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">@application.Status</span>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-primary btn-sm view-btn" data-id="@application.Id">View</button>
+                                                        <a href="@Url.Action("Edit", "BurialApplication", new { id = application.Id })" class="btn btn-secondary btn-sm">Edit</a>
+                                                        <a href="@Url.Action("Delete", "BurialApplication", new { id = application.Id })" class="btn btn-danger btn-sm">Delete</a>
                                                     </td>
                                                 </tr>
                                             }
@@ -74,8 +147,126 @@
         </div>
     </div>
 
+    <!-- Modal for Viewing Details -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content custom-modal-content">
+                <div class="modal-header custom-modal-header">
+                    <h5 class="modal-title" id="viewModalLabel">Burial Application Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Left Column (Applicant Info) -->
+                        <div class="col-md-6">
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Application ID:</strong> <span id="modalApplicationId"></span></div>
+                                <div class="col-6"><strong>Deceased Name:</strong> <span id="modalDeceasedName"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>First Name (Applicant):</strong> <span id="modalApplicantFirstName"></span></div>
+                                <div class="col-6"><strong>Last Name (Applicant):</strong> <span id="modalApplicantLastName"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Relationship to Deceased:</strong> <span id="modalRelationshipToDeceased"></span></div>
+                                <div class="col-6"><strong>Contact Information:</strong> <span id="modalContactInfo"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Address:</strong> <span id="modalAddress"></span></div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column (Deceased Info and Burial Details) -->
+                        <div class="col-md-6">
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Date of Burial:</strong> <span id="modalDateOfBurial"></span></div>
+                                <div class="col-6"><strong>Status:</strong> <span id="modalStatus" class="badge"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Start Time:</strong> <span id="modalStartTime"></span></div>
+                                <div class="col-6"><strong>End Time:</strong> <span id="modalEndTime"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Special Instructions:</strong> <span id="modalSpecialInstructions"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Cause of Death:</strong> <span id="modalCauseOfDeath"></span></div>
+                                <div class="col-6"><strong>Religion:</strong> <span id="modalReligion"></span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Attachment:</strong> <span id="modalAttachment"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="~/js/scripts.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Handle the click event of the View button
+            $('.view-btn').on('click', function () {
+                const applicationId = $(this).data('id');
+
+                // AJAX request to fetch the burial application details
+                $.ajax({
+                    url: '/BurialApplication/GetDetails', // URL of the controller action that returns the data
+                    type: 'GET',
+                    data: { id: applicationId }, // Send the application ID to fetch its details
+                    success: function (data) {
+                        if (data.success) {
+                            // Populate the modal with fetched data
+                            $('#modalApplicationId').text(data.application.ApplicationId);
+                            $('#modalDeceasedName').text(data.application.DeceasedFirstName + ' ' + data.application.DeceasedLastName);
+                            $('#modalApplicantFirstName').text(data.application.FirstName);
+                            $('#modalApplicantLastName').text(data.application.LastName);
+                            $('#modalRelationshipToDeceased').text(data.application.RelationshipToDeceased);
+                            $('#modalContactInfo').text(data.application.ContactInformation);
+                            $('#modalAddress').text(data.application.Address);
+                            $('#modalDateOfBurial').text(data.application.DateOfBurial);
+                            $('#modalStartTime').text(data.application.StartTime);
+                            $('#modalEndTime').text(data.application.EndTime);
+                            $('#modalSpecialInstructions').text(data.application.SpecialInstructions);
+                            $('#modalCauseOfDeath').text(data.application.CauseOfDeath);
+                            $('#modalReligion').text(data.application.Religion);
+
+                            if (data.application.AttachmentPath) {
+                                $('#modalAttachment').html(`<a href="${data.application.AttachmentPath}" target="_blank">View Attachment</a>`);
+                            } else {
+                                $('#modalAttachment').text('No attachment available.');
+                            }
+
+                            // Display the status as a badge
+                            let statusBadge = $('#modalStatus');
+                            statusBadge.removeClass().addClass('badge'); // Reset any existing badge classes
+                            if (data.application.Status === "Pending") {
+                                statusBadge.addClass('bg-warning text-dark').text('Pending');
+                            } else if (data.application.Status === "Approved") {
+                                statusBadge.addClass('bg-success').text('Approved');
+                            } else if (data.application.Status === "Rejected") {
+                                statusBadge.addClass('bg-danger').text('Rejected');
+                            } else {
+                                statusBadge.addClass('bg-secondary').text(data.application.Status);
+                            }
+
+                            // Show the modal
+                            $('#viewModal').modal('show');
+                        } else {
+                            alert('Failed to fetch application details.');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Error fetching application details: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

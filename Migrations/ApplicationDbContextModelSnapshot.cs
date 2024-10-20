@@ -34,6 +34,10 @@ namespace AreEyeP.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AttachmentPath")
                         .HasColumnType("nvarchar(max)");
 
