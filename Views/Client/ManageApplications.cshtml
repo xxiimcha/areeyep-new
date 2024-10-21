@@ -118,6 +118,10 @@
                                                         {
                                                             <span class="badge bg-danger">Rejected</span>
                                                         }
+                                                        else if (application.Status == "Pending Payment")
+                                                        {
+                                                            <span class="badge bg-info text-dark">Pending Payment</span>
+                                                        }
                                                         else
                                                         {
                                                             <span class="badge bg-secondary">@application.Status</span>
@@ -127,6 +131,10 @@
                                                         <button class="btn btn-primary btn-sm view-btn" data-id="@application.Id">View</button>
                                                         <a href="@Url.Action("Edit", "BurialApplication", new { id = application.Id })" class="btn btn-secondary btn-sm">Edit</a>
                                                         <a href="@Url.Action("Delete", "BurialApplication", new { id = application.Id })" class="btn btn-danger btn-sm">Delete</a>
+                                                        @if (application.Status == "Pending Payment")
+                                                        {
+                                                            <button class="btn btn-success btn-sm add-payment-btn" data-id="@application.Id">Add Payment</button>
+                                                        }
                                                     </td>
                                                 </tr>
                                             }
@@ -156,46 +164,97 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <!-- Left Column (Applicant Info) -->
-                        <div class="col-md-6">
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Application ID:</strong> <span id="modalApplicationId"></span></div>
-                                <div class="col-6"><strong>Deceased Name:</strong> <span id="modalDeceasedName"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>First Name (Applicant):</strong> <span id="modalApplicantFirstName"></span></div>
-                                <div class="col-6"><strong>Last Name (Applicant):</strong> <span id="modalApplicantLastName"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Relationship to Deceased:</strong> <span id="modalRelationshipToDeceased"></span></div>
-                                <div class="col-6"><strong>Contact Information:</strong> <span id="modalContactInfo"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Address:</strong> <span id="modalAddress"></span></div>
-                            </div>
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th>Application ID:</th>
+                                <td id="modalApplicationId"></td>
+                                <th>Deceased Name:</th>
+                                <td id="modalDeceasedName"></td>
+                            </tr>
+                            <tr>
+                                <th>First Name (Applicant):</th>
+                                <td id="modalApplicantFirstName"></td>
+                                <th>Last Name (Applicant):</th>
+                                <td id="modalApplicantLastName"></td>
+                            </tr>
+                            <tr>
+                                <th>Relationship to Deceased:</th>
+                                <td id="modalRelationshipToDeceased"></td>
+                                <th>Contact Information:</th>
+                                <td id="modalContactInfo"></td>
+                            </tr>
+                            <tr>
+                                <th>Address:</th>
+                                <td colspan="3" id="modalAddress"></td>
+                            </tr>
+                            <tr>
+                                <th>Date of Burial:</th>
+                                <td id="modalDateOfBurial"></td>
+                                <th>Status:</th>
+                                <td id="modalStatus" class="badge"></td>
+                            </tr>
+                            <tr>
+                                <th>Start Time:</th>
+                                <td id="modalStartTime"></td>
+                                <th>End Time:</th>
+                                <td id="modalEndTime"></td>
+                            </tr>
+                            <tr>
+                                <th>Special Instructions:</th>
+                                <td colspan="3" id="modalSpecialInstructions"></td>
+                            </tr>
+                            <tr>
+                                <th>Cause of Death:</th>
+                                <td id="modalCauseOfDeath"></td>
+                                <th>Religion:</th>
+                                <td id="modalReligion"></td>
+                            </tr>
+                            <tr>
+                                <th>Attachment:</th>
+                                <td colspan="3" id="modalAttachment"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content custom-modal-content">
+                <div class="modal-header custom-modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">E Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabs for Payment Options -->
+                    <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="walk-in-tab" data-bs-toggle="tab" data-bs-target="#walk-in" type="button" role="tab" aria-controls="walk-in" aria-selected="true">Walk in payment</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="e-payment-tab" data-bs-toggle="tab" data-bs-target="#e-payment" type="button" role="tab" aria-controls="e-payment" aria-selected="false">E payment</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="paymentTabsContent">
+                        <!-- Walk-in Payment Content -->
+                        <div class="tab-pane fade show active" id="walk-in" role="tabpanel" aria-labelledby="walk-in-tab">
+                            <form id="walkInForm">
+                                <div class="mb-3">
+                                    <label for="receipt" class="form-label">Upload Receipt:</label>
+                                    <input type="file" class="form-control" id="receipt" name="receipt" accept="image/*">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Submit</button>
+                                </div>
+                            </form>
                         </div>
-
-                        <!-- Right Column (Deceased Info and Burial Details) -->
-                        <div class="col-md-6">
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Date of Burial:</strong> <span id="modalDateOfBurial"></span></div>
-                                <div class="col-6"><strong>Status:</strong> <span id="modalStatus" class="badge"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Start Time:</strong> <span id="modalStartTime"></span></div>
-                                <div class="col-6"><strong>End Time:</strong> <span id="modalEndTime"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Special Instructions:</strong> <span id="modalSpecialInstructions"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Cause of Death:</strong> <span id="modalCauseOfDeath"></span></div>
-                                <div class="col-6"><strong>Religion:</strong> <span id="modalReligion"></span></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-6"><strong>Attachment:</strong> <span id="modalAttachment"></span></div>
-                            </div>
+                        <!-- E Payment Content -->
+                        <div class="tab-pane fade" id="e-payment" role="tabpanel" aria-labelledby="e-payment-tab">
+                            <button class="btn btn-primary" id="proceedEPaymentBtn">Proceed E payment</button>
                         </div>
                     </div>
                 </div>
@@ -203,11 +262,54 @@
         </div>
     </div>
 
+    <!-- Payment Methods Modal (Will appear after "Proceed E payment" is clicked) -->
+    <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-labelledby="paymentMethodModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content custom-modal-content">
+                <div class="modal-header custom-modal-header">
+                    <h5 class="modal-title" id="paymentMethodModalLabel">Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount to pay</label>
+                            <input type="text" class="form-control" id="amount" value="5000" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method:</label>
+                            <div>
+                                <input type="radio" id="gcash" name="paymentMethod" value="GCash">
+                                <label for="gcash">Pay with GCash</label><br>
+                                <input type="radio" id="paypal" name="paymentMethod" value="PayPal">
+                                <label for="paypal">Pay with PayPal</label><br>
+                                <input type="radio" id="paymaya" name="paymentMethod" value="PayMaya">
+                                <label for="paymaya">Pay with PayMaya</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountNumber" class="form-label">Account Number</label>
+                            <input type="text" class="form-control" id="accountNumber" name="accountNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountName" class="form-label">Account Name</label>
+                            <input type="text" class="form-control" id="accountName" name="accountName" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Pay</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="~/js/scripts.js"></script>
+
     <script>
         $(document).ready(function () {
             // Handle the click event of the View button
@@ -221,38 +323,64 @@
                     data: { id: applicationId }, // Send the application ID to fetch its details
                     success: function (data) {
                         if (data.success) {
-                            // Populate the modal with fetched data
-                            $('#modalApplicationId').text(data.application.ApplicationId);
-                            $('#modalDeceasedName').text(data.application.DeceasedFirstName + ' ' + data.application.DeceasedLastName);
-                            $('#modalApplicantFirstName').text(data.application.FirstName);
-                            $('#modalApplicantLastName').text(data.application.LastName);
-                            $('#modalRelationshipToDeceased').text(data.application.RelationshipToDeceased);
-                            $('#modalContactInfo').text(data.application.ContactInformation);
-                            $('#modalAddress').text(data.application.Address);
-                            $('#modalDateOfBurial').text(data.application.DateOfBurial);
-                            $('#modalStartTime').text(data.application.StartTime);
-                            $('#modalEndTime').text(data.application.EndTime);
-                            $('#modalSpecialInstructions').text(data.application.SpecialInstructions);
-                            $('#modalCauseOfDeath').text(data.application.CauseOfDeath);
-                            $('#modalReligion').text(data.application.Religion);
+                            // Format the date of burial
+                            const dateOfBurial = new Date(data.application.dateOfBurial);
+                            const formattedDate = dateOfBurial.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: '2-digit'
+                            });
 
-                            if (data.application.AttachmentPath) {
-                                $('#modalAttachment').html(`<a href="${data.application.AttachmentPath}" target="_blank">View Attachment</a>`);
+                            // Format the start and end times to 12-hour format
+                            const formatTime = (timeStr) => {
+                                const [hours, minutes] = timeStr.split(':');
+                                const date = new Date();
+                                date.setHours(hours);
+                                date.setMinutes(minutes);
+                                return date.toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                            };
+
+                            const formattedStartTime = formatTime(data.application.startTime);
+                            const formattedEndTime = formatTime(data.application.endTime);
+
+                            // Populate the table with fetched data
+                            $('#modalApplicationId').text(data.application.applicationId);
+                            $('#modalDeceasedName').text(data.application.deceasedFirstName + ' ' + data.application.deceasedLastName);
+                            $('#modalApplicantFirstName').text(data.application.firstName);
+                            $('#modalApplicantLastName').text(data.application.lastName);
+                            $('#modalRelationshipToDeceased').text(data.application.relationshipToDeceased);
+                            $('#modalContactInfo').text(data.application.contactInformation);
+                            $('#modalAddress').text(data.application.address);
+                            $('#modalDateOfBurial').text(formattedDate);
+                            $('#modalStartTime').text(formattedStartTime);
+                            $('#modalEndTime').text(formattedEndTime);
+                            $('#modalSpecialInstructions').text(data.application.specialInstructions);
+                            $('#modalCauseOfDeath').text(data.application.causeOfDeath);
+                            $('#modalReligion').text(data.application.religion);
+
+                            if (data.application.attachmentPath) {
+                                $('#modalAttachment').html(`<a href="${data.application.attachmentPath}" target="_blank">View Attachment</a>`);
                             } else {
                                 $('#modalAttachment').text('No attachment available.');
                             }
 
                             // Display the status as a badge
                             let statusBadge = $('#modalStatus');
-                            statusBadge.removeClass().addClass('badge'); // Reset any existing badge classes
-                            if (data.application.Status === "Pending") {
+                            statusBadge.removeClass().addClass('badge');
+                            if (data.application.status === "Pending") {
                                 statusBadge.addClass('bg-warning text-dark').text('Pending');
-                            } else if (data.application.Status === "Approved") {
+                            } else if (data.application.status === "Approved") {
                                 statusBadge.addClass('bg-success').text('Approved');
-                            } else if (data.application.Status === "Rejected") {
+                            } else if (data.application.status === "Rejected") {
                                 statusBadge.addClass('bg-danger').text('Rejected');
+                            } else if (data.application.status === "Pending Payment") {
+                                statusBadge.addClass('bg-info text-dark').text('Pending Payment');
                             } else {
-                                statusBadge.addClass('bg-secondary').text(data.application.Status);
+                                statusBadge.addClass('bg-secondary').text(data.application.status);
                             }
 
                             // Show the modal
@@ -266,7 +394,46 @@
                     }
                 });
             });
+
+            // Event delegation for dynamically created "Add Payment" buttons
+            $(document).on('click', '.add-payment-btn', function () {
+                // Retrieve the application ID
+                const applicationId = $(this).data('id');
+
+                // Optionally, set the application ID or other data in the modal if needed
+                $('#paymentModal').data('application-id', applicationId);
+
+                // Show the payment modal
+                $('#paymentModal').modal('show');
+            });
+
+            $('#proceedEPaymentBtn').on('click', function () {
+                // Hide the current payment modal
+                $('#paymentModal').modal('hide');
+
+                // Show the payment methods modal
+                $('#paymentMethodModal').modal('show');
+            });
+
+            // Handle the payment form submission
+            $('#paymentForm').on('submit', function (e) {
+                e.preventDefault();
+
+                // Collect payment details
+                const paymentMethod = $('input[name="paymentMethod"]:checked').val();
+                const accountNumber = $('#accountNumber').val();
+                const accountName = $('#accountName').val();
+
+                // Add your AJAX code here to send the payment details to your backend
+                console.log('Payment method:', paymentMethod);
+                console.log('Account number:', accountNumber);
+                console.log('Account name:', accountName);
+
+                // Close the modal after submission
+                $('#paymentMethodModal').modal('hide');
+            });
         });
+
     </script>
 </body>
 </html>
