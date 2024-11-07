@@ -132,10 +132,7 @@ namespace AreEyeP.Controllers
                 // Log the applicationId for verification
                 Console.WriteLine($"Received applicationId: {applicationId} (Type: {applicationId.GetType()})");
 
-                // Log the database connection string for verification
-                Console.WriteLine("Database Connection String: " + _context.Database.GetConnectionString());
-
-                // Attempt direct SQL connection to verify record existence
+                // Direct SQL check to verify record existence
                 using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
                 {
                     connection.Open();
@@ -152,9 +149,6 @@ namespace AreEyeP.Controllers
                     }
                 }
 
-                // Log before fetching application with Entity Framework
-                Console.WriteLine($"Attempting to retrieve application with Id = {applicationId} using Entity Framework...");
-
                 // Fetch application without AsNoTracking to allow for status update
                 var application = _context.BurialApplications.FirstOrDefault(a => a.Id == applicationId);
                 if (application == null)
@@ -162,9 +156,6 @@ namespace AreEyeP.Controllers
                     Console.WriteLine("Application record not found in Entity Framework query.");
                     return Json(new { success = false, message = "Application record not found in Entity Framework query." });
                 }
-
-                // Log the successful retrieval of the application record
-                Console.WriteLine($"Application record found with Entity Framework: Id = {application.Id}");
 
                 // Attempt to fetch the associated payment record
                 var payment = _context.ClientPayments.FirstOrDefault(p => p.ApplicationId == applicationId);
@@ -174,17 +165,55 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Payment record not found." });
                 }
 
-                // Log before updating statuses
-                Console.WriteLine("Updating application and payment statuses...");
-
                 // Update statuses
                 application.Status = "Approved";
                 payment.Status = "Completed";
                 _context.SaveChanges();
 
+                // Insert deceased information into Deceased table
+                var deceased = new Deceased
+                {
+                    FirstName = application.FirstName,
+                    LastName = application.LastName,
+                    DateOfBirth = application.DateOfBirth,
+                    DateOfDeath = application.DateOfDeath,
+                    Address = application.Address,
+                    CauseOfDeath = application.CauseOfDeath,
+                    Gender = application.Gender,
+                    ApplicationId = application.Id
+                };
+
+                _context.Deceased.Add(deceased);
+                _context.SaveChanges();
+
+                // Retrieve the ID of the newly added deceased record
+                int deceasedId = deceased.Id;
+
+                // Assign a random available catacomb to the deceased
+                var availableCatacomb = _context.Catacombs
+                    .Where(c => c.AvailabilityStatus == "Available") // Check if the catacomb is available by string comparison
+                    .OrderBy(c => Guid.NewGuid())  // Randomly select an available catacomb
+                    .FirstOrDefault();
+
+                if (availableCatacomb != null)
+                {
+                    availableCatacomb.AvailabilityStatus = "Occupied"; // Set the status to "Occupied"
+                    availableCatacomb.DeceasedInformation = deceasedId.ToString(); // Convert int to string
+
+                    _context.SaveChanges();
+
+                    Console.WriteLine($"Assigned Catacomb ID: {availableCatacomb.Id} to Deceased ID: {deceasedId}");
+                }
+                else
+                {
+                    Console.WriteLine("No available catacombs found.");
+                    return Json(new { success = false, message = "No available catacombs to assign." });
+                }
+
+
                 // Log successful completion
-                Console.WriteLine("Application and payment statuses updated successfully.");
-                return Json(new { success = true, message = "Application completed and statuses updated successfully." });
+                Console.WriteLine("Application and payment statuses updated, deceased record inserted, and catacomb assigned successfully.");
+                return Json(new { success = true, message = "Application completed, statuses updated, and catacomb assigned successfully." });
             }
             catch (Exception ex)
             {
