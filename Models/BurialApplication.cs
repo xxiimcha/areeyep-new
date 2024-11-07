@@ -94,5 +94,14 @@ namespace AreEyeP.Models
         [Required]
         [Display(Name = "Status")]
         public string Status { get; set; } = "Pending";  // Default to "Pending"
+
+        // Updated Terms column as nullable int
+        [Display(Name = "Terms")]
+        public int? Terms { get; set; }  // Changed to nullable int
+
+        // New Date of Renewal column
+        [Display(Name = "Date of Renewal")]
+        [DataType(DataType.Date)]
+        public DateTime? DateOfRenewal { get; set; }  // Make this nullable
     }
 }

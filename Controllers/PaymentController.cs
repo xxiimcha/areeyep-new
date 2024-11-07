@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Threading.Tasks;
+using System;
 
 namespace AreEyeP.Controllers
 {
@@ -42,7 +43,7 @@ namespace AreEyeP.Controllers
                     // Handle file upload for QR code
                     if (QrCode != null && QrCode.Length > 0)
                     {
-                        var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                        var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "payment-methods");
                         if (!Directory.Exists(uploadsDirectory))
                         {
                             Directory.CreateDirectory(uploadsDirectory);
@@ -55,7 +56,7 @@ namespace AreEyeP.Controllers
                         }
 
                         // Save the relative path of the QR code image
-                        payment.QrCodePath = "/uploads/" + QrCode.FileName;
+                        payment.QrCodePath = "/uploads/payment-methods/" + QrCode.FileName;
                     }
 
                     // Save the payment record to the database
@@ -67,13 +68,29 @@ namespace AreEyeP.Controllers
                 }
                 catch (Exception ex)
                 {
-                    return Json(new { success = false, message = ex.Message });
+                    // Log the exception and return an error message
+                    Console.WriteLine("Unexpected error occurred: " + ex.ToString());
+                    return Json(new { success = false, message = "Unexpected server error: " + ex.Message });
                 }
             }
+            else
+            {
+                // Collect and log ModelState errors for debugging
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                               .Select(e => e.ErrorMessage)
+                                               .ToList();
 
-            // If validation fails, return a JSON response with errors
-            return Json(new { success = false, message = "Invalid payment details provided." });
+                Console.WriteLine("ModelState is invalid. Errors:");
+                foreach (var error in errors)
+                {
+                    Console.WriteLine(error);
+                }
+
+                // Return a JSON response with error details
+                return Json(new { success = false, message = "Invalid payment details provided.", errors = errors });
+            }
         }
+
 
         // GET: Payment/Details/5
         public async Task<IActionResult> Details(int id)

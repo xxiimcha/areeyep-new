@@ -26,12 +26,15 @@ namespace AreEyeP.Controllers
             return View("/Views/Shared/Services.cshtml", services);
         }
 
-        // GET: /Admin/Application
+        // GET: /Application
         public IActionResult Application()
         {
             var applications = _context.BurialApplications.ToList();
-            return View(applications);
+            var userRole = HttpContext.Session.GetString("UserRole"); // Assuming the role is stored in session
+            ViewBag.UserRole = userRole;
+            return View("~/Views/Shared/Application.cshtml", applications);
         }
+
 
         // GET: Admin/Dashboard
         public IActionResult Dashboard()

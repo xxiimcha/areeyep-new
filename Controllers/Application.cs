@@ -3,6 +3,9 @@ using AreEyeP.Models;
 using System.Linq;
 using System.Threading.Tasks;
 using AreEyeP.Data;
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 
 namespace AreEyeP.Controllers
 {
@@ -31,46 +34,169 @@ namespace AreEyeP.Controllers
             {
                 // Update the status based on the input from the front-end
                 application.Status = model.Status;
+
+                // If terms are provided, set the Terms and calculate DateOfRenewal
+                if (model.Terms.HasValue)
+                {
+                    application.Terms = model.Terms;
+                    application.DateOfRenewal = DateTime.Now.AddYears(model.Terms.Value);
+                }
+
+                // If the status is set to "Pending Payment" and an amount is provided, add a payment record
+                if (model.Status == "Pending Payment" && model.Amount.HasValue)
+                {
+                    var payment = new ClientPayment
+                    {
+                        UserId = application.UserId,               // Link to the user
+                        ApplicationId = application.Id,            // Link to the application
+                        Amount = model.Amount.Value,               // Set the amount
+                        PaymentMethod = "Unspecified",             // Set a default payment method or customize as needed
+                        Status = "Pending",                        // Initial payment status
+                        PaymentDate = DateTime.Now,                // Current date as the payment date
+                        ReferenceNumber = GenerateReferenceNumber() // Generate a reference number if required
+                    };
+
+                    // Add the payment record to the ClientPayments table
+                    _context.ClientPayments.Add(payment);
+                }
+
                 _context.SaveChanges();
-                return Json(new { success = true, message = "Application status updated successfully." });
+                return Json(new { success = true, message = "Application status and terms updated successfully." });
             }
+
             return Json(new { success = false, message = "Application not found." });
         }
+
 
         // Model for the status update
         public class UpdateStatusModel
         {
             public int Id { get; set; }
             public string Status { get; set; }
+            public decimal? Amount { get; set; }
+            public int? Terms { get; set; } // Nullable integer for Terms
+        }
+
+        // Helper method to generate a unique reference number for payments
+        private string GenerateReferenceNumber()
+        {
+            return Guid.NewGuid().ToString("N").ToUpper(); // Generate a unique GUID
         }
 
         // GET: /Application/GetDetails?id=1
         [HttpGet]
         public JsonResult GetDetails(int id)
         {
-            var application = _context.BurialApplications.FirstOrDefault(a => a.Id == id);
+            var application = _context.BurialApplications
+                                      .Where(a => a.Id == id)
+                                      .Select(a => new
+                                      {
+                                          a.FirstName,
+                                          a.LastName,
+                                          DateOfDeath = a.DateOfDeath.ToString("yyyy-MM-dd"),
+                                          DateOfBurial = a.DateOfBurial.ToString("yyyy-MM-dd"),
+                                          a.SpecialInstructions,
+                                          a.CauseOfDeath,
+                                          a.Religion,
+                                          a.Address,
+                                          a.Status,
+                                          Payment = _context.ClientPayments
+                                              .Where(p => p.ApplicationId == a.Id)
+                                              .OrderByDescending(p => p.PaymentDate) // Get the latest payment
+                                              .Select(p => new
+                                              {
+                                                  p.Amount,
+                                                  p.Status,
+                                                  PaymentDate = p.PaymentDate.ToString("yyyy-MM-dd"),
+                                                  p.ReferenceNumber
+                                              })
+                                              .FirstOrDefault() // Assuming only one recent payment per application
+                                      })
+                                      .FirstOrDefault();
+
             if (application != null)
             {
-                return Json(new
-                {
-                    success = true,
-                    application = new
-                    {
-                        application.FirstName,
-                        application.LastName,
-                        DateOfDeath = application.DateOfDeath.ToString("yyyy-MM-dd"),
-                        DateOfBurial = application.DateOfBurial.ToString("yyyy-MM-dd"),
-                        application.SpecialInstructions,
-                        application.CauseOfDeath,
-                        application.Religion,
-                        application.Address,
-                        application.Status
-                        // Add more fields as needed
-                    }
-                });
+                return Json(new { success = true, application });
             }
 
             return Json(new { success = false });
+        }
+
+        [HttpPost]
+        public JsonResult CompleteApplication([FromBody] CompleteApplicationRequest request)
+        {
+            try
+            {
+                int applicationId = request.ApplicationId;
+
+                // Log the applicationId for verification
+                Console.WriteLine($"Received applicationId: {applicationId} (Type: {applicationId.GetType()})");
+
+                // Log the database connection string for verification
+                Console.WriteLine("Database Connection String: " + _context.Database.GetConnectionString());
+
+                // Attempt direct SQL connection to verify record existence
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    connection.Open();
+                    var command = new SqlCommand("SELECT COUNT(*) FROM BurialApplications WHERE Id = @Id", connection);
+                    command.Parameters.AddWithValue("@Id", applicationId);
+
+                    var count = (int)command.ExecuteScalar();
+                    Console.WriteLine($"Direct SQL check: Records found with Id = {applicationId}: {count}");
+
+                    if (count == 0)
+                    {
+                        Console.WriteLine("Application record not found in direct SQL check.");
+                        return Json(new { success = false, message = "Application record not found." });
+                    }
+                }
+
+                // Log before fetching application with Entity Framework
+                Console.WriteLine($"Attempting to retrieve application with Id = {applicationId} using Entity Framework...");
+
+                // Fetch application without AsNoTracking to allow for status update
+                var application = _context.BurialApplications.FirstOrDefault(a => a.Id == applicationId);
+                if (application == null)
+                {
+                    Console.WriteLine("Application record not found in Entity Framework query.");
+                    return Json(new { success = false, message = "Application record not found in Entity Framework query." });
+                }
+
+                // Log the successful retrieval of the application record
+                Console.WriteLine($"Application record found with Entity Framework: Id = {application.Id}");
+
+                // Attempt to fetch the associated payment record
+                var payment = _context.ClientPayments.FirstOrDefault(p => p.ApplicationId == applicationId);
+                if (payment == null)
+                {
+                    Console.WriteLine("Payment record not found.");
+                    return Json(new { success = false, message = "Payment record not found." });
+                }
+
+                // Log before updating statuses
+                Console.WriteLine("Updating application and payment statuses...");
+
+                // Update statuses
+                application.Status = "Approved";
+                payment.Status = "Completed";
+                _context.SaveChanges();
+
+                // Log successful completion
+                Console.WriteLine("Application and payment statuses updated successfully.");
+                return Json(new { success = true, message = "Application completed and statuses updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                // Log any exception that occurs
+                Console.WriteLine("Error completing application: " + ex.Message);
+                return Json(new { success = false, message = "An error occurred while completing the application." });
+            }
+        }
+
+        public class CompleteApplicationRequest
+        {
+            public int ApplicationId { get; set; }
         }
     }
 }

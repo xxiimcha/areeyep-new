@@ -17,6 +17,7 @@ namespace AreEyeP.Data
         public DbSet<Service> Services { get; set; }
         public DbSet<ServiceRequest> ServiceRequests { get; set; }
         public DbSet<ActivityLog> ActivityLog { get; set; }
+        public DbSet<Renewal> Renewal { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

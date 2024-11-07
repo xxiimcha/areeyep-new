@@ -141,19 +141,73 @@
                                 <p id="specialInstructions"></p>
                             </div>
                         </div>
+                        <div id="paymentInfoSection" style="display: none;">
+                        <hr />
+                            <h6 class="text-primary mt-4">Payment Information</h6>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label><strong>Amount Paid:</strong></label>
+                                    <p id="amountPaid"></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label><strong>Payment Status:</strong></label>
+                                    <p id="paymentStatus"></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label><strong>Payment Date:</strong></label>
+                                    <p id="paymentDate"></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label><strong>Reference Number:</strong></label>
+                                    <p id="referenceNumber"></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
-                    <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="declineApplication()">Decline</button>
-                    <button id="confirmPaymentButton" class="btn btn-primary" style="display: none;" onclick="confirmPayment()">Confirm Payment</button>
+                    @if (ViewBag.UserRole == "LGU")
+                    {
+                        <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
+                        <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="declineApplication()">Decline</button>
+                        <button id="confirmPaymentButton" class="btn btn-primary" style="display: none;" onclick="completeApplication()">Confirm Payment</button>
+                    }
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal for Payment Confirmation -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">Payment and Renewal Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <h6 class="text-primary">Enter Payment Amount and Renewal Terms</h6>
+                        <div class="mb-3">
+                            <label for="paymentAmountInput" class="form-label">Amount (₱)</label>
+                            <input type="number" class="form-control" id="paymentAmountInput" placeholder="Enter amount">
+                        </div>
+                        <div class="mb-3">
+                            <label for="renewalTermsInput" class="form-label">Terms (years)</label>
+                            <input type="number" class="form-control" id="renewalTermsInput" placeholder="Enter years before renewal">
+                        </div>
+                        <p>Please enter the amount and terms to proceed with payment and complete the application approval process.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="confirmPayment()">Submit</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     @Html.Partial("_ScriptLinks")
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
@@ -201,6 +255,18 @@
                             $('#confirmPaymentButton').show();
                         }
 
+                        const paymentInfoSection = document.getElementById("paymentInfoSection");
+                        const payment = application.payment; // Access the payment object within application
+                        if (payment && payment.amount) {
+                            paymentInfoSection.style.display = "block";
+                            document.getElementById("amountPaid").textContent = payment.amount || "N/A";
+                            document.getElementById("paymentStatus").textContent = payment.status || "N/A";
+                            document.getElementById("paymentDate").textContent = new Date(payment.paymentDate).toLocaleDateString() || "N/A";
+                            document.getElementById("referenceNumber").textContent = payment.referenceNumber || "N/A";
+                        } else {
+                            paymentInfoSection.style.display = "none";
+                        }
+
                         // Show the modal
                         $('#applicationModal').modal('show');
                     } else {
@@ -213,9 +279,79 @@
                 });
         }
 
+        function completeApplication() {
+            const applicationId = $('#applicationModal').data('applicationId');
+
+            // Log the applicationId to confirm it's being retrieved correctly
+            console.log("Completing application with ID:", applicationId);
+
+            // Send request to complete application and update statuses
+            fetch(`/Application/CompleteApplication`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ applicationId })
+            })
+                .then(response => {
+                    console.log("Server response status:", response.status); // Log the response status
+                    return response.json();
+                })
+                .then(result => {
+                    console.log("Server response data:", result); // Log the result from the server
+                    if (result.success) {
+                        toastr.success(result.message);
+                        location.reload(); // Reload the page to reflect changes
+                    } else {
+                        toastr.error(result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error completing application:', error);
+                    toastr.error('An error occurred while completing the application.');
+                });
+
+            // Hide the application modal after submission
+            $('#applicationModal').modal('hide');
+        }
+
         function approveApplication() {
             const applicationId = $('#applicationModal').data('applicationId');
-            updateApplicationStatus(applicationId, "Pending Payment");
+
+            // Hide the details modal before showing the payment modal
+            $('#applicationModal').modal('hide');
+
+            // Set the application ID in the payment modal for reference
+            $('#paymentModal').data('applicationId', applicationId);
+
+            // Clear any previous amount or renewal terms entered
+            document.getElementById('paymentAmountInput').value = "";
+            document.getElementById('renewalTermsInput').value = "";
+
+            // Show the payment modal
+            $('#paymentModal').modal('show');
+        }
+
+        function confirmPayment() {
+            const applicationId = $('#paymentModal').data('applicationId');
+            const amount = document.getElementById('paymentAmountInput').value;
+            const terms = document.getElementById('renewalTermsInput').value;
+
+            // Validate the amount and terms input
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid amount to proceed.");
+                return;
+            }
+            if (!terms || terms <= 0) {
+                alert("Please enter a valid term (in years) for renewal.");
+                return;
+            }
+
+            // Update the application status to "Pending Payment" and pass the entered amount and terms
+            updateApplicationStatus(applicationId, "Pending Payment", amount, terms);
+
+            // Hide the payment modal after confirmation
+            $('#paymentModal').modal('hide');
         }
 
         function declineApplication() {
@@ -223,18 +359,15 @@
             updateApplicationStatus(applicationId, "Declined");
         }
 
-        function confirmPayment() {
-            const applicationId = $('#applicationModal').data('applicationId');
-            updateApplicationStatus(applicationId, "Approved");
-        }
+        function updateApplicationStatus(id, status, amount = null, terms = null) {
+            const payload = { id: id, status: status, amount: amount, terms: terms };
 
-        function updateApplicationStatus(id, status) {
             fetch(`/Application/UpdateStatus`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id: id, status: status })
+                body: JSON.stringify(payload)
             })
                 .then(response => response.json())
                 .then(result => {

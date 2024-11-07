@@ -22,10 +22,6 @@
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
                         User
                     </a>
-                    <a class="nav-link text-white" href="/Admin/Application">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-compass"></i></div>
-                        Application
-                    </a>
                     <a class="nav-link text-white" href="/Admin/Payments">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
                         Payments
@@ -78,15 +74,15 @@
                 }
 
                 @* LGU Role Sidebar Menu *@
-                @if (userRole == "lgu")
+                @if (userRole == "lgu" || userRole == "LGU")
                 {
                     <a class="nav-link text-white" href="/LGU/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
                         Home
                     </a>
-                    <a class="nav-link text-white" href="/LGU/Applications">
+                    <a class="nav-link text-white" href="/Admin/Application">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-compass"></i></div>
-                        Applications
+                        Application
                     </a>
                     <a class="nav-link text-white" href="/LGU/Reports">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-cogs"></i></div>
