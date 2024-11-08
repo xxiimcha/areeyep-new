@@ -9,7 +9,7 @@ namespace AreEyeP.Models
         public int Id { get; set; }
 
         [Required]
-        public string CatacombId { get; set; }
+        public string DeceasedId { get; set; }
 
         [Required]
         public DateTime DateOfService { get; set; }

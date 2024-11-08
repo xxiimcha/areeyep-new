@@ -84,18 +84,34 @@
                         <div class="card-header bg-primary text-white">
                             Service Information
                         </div>
-                        <div class="card-body"> 
+                        <div class="card-body">
                             <form id="serviceRequestForm" method="post">
                                 @Html.AntiForgeryToken()
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label for="catacombId" class="form-label">Catacomb ID</label>
-                                        <input type="text" class="form-control" id="catacombId" name="CatacombId" placeholder="Deceased ID" required />
+                                        <input type="hidden" id="userId" name="UserId" value="@ViewBag.UserId" />
+                                        <label for="deceasedId" class="form-label">Deceased ID</label>
+                                        <!-- Deceased List Dropdown -->
+                                        <select class="form-select" id="deceasedId" name="DeceasedId" required>
+                                            <option selected disabled>Choose Deceased</option>
+                                            @if (ViewBag.DeceasedList != null && ViewBag.DeceasedList.Count > 0)
+                                            {
+                                                foreach (var deceased in ViewBag.DeceasedList)
+                                                {
+                                                    <option value="@deceased.Id">
+                                                        @deceased.FirstName @deceased.LastName (Catacomb: @deceased.CatacombID)
+                                                    </option>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <option disabled>No approved deceased available</option>
+                                            }
+                                        </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="dateOfService" class="form-label">Date of Service</label>
                                         <input type="date" class="form-control" id="dateOfService" name="DateOfService" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
-
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -136,6 +152,12 @@
 
     @Html.Partial("_ScriptLinks")
     <script>
+        
+        const userId = '@ViewBag.UserId';
+        console.log("User ID:", userId);
+
+        document.getElementById("userId").value = userId;
+
         function resetForm() {
             document.getElementById('serviceRequestForm').reset();
         }
@@ -144,7 +166,7 @@
             const form = document.getElementById('serviceRequestForm');
             const formData = new FormData(form);
 
-            // Get the anti-forgery token value from the hidden input field
+            // Check for CSRF token in the form
             const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
             if (!tokenElement) {
                 console.error("CSRF token not found");
@@ -153,10 +175,14 @@
             }
             const tokenValue = tokenElement.value;
 
+            // Convert FormData to JSON format
             const jsonData = {};
             formData.forEach((value, key) => {
                 jsonData[key] = value;
             });
+
+            // Log JSON data for debugging
+            console.log("Form Data being sent:", jsonData);
 
             fetch('/ServiceRequest/Create', {
                 method: 'POST',
@@ -167,21 +193,26 @@
                 body: JSON.stringify(jsonData)
             })
                 .then(response => {
+                    // Check for a successful network response
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
                 })
                 .then(data => {
+                    // Log server response for debugging
+                    console.log("Server Response:", data);
+
                     if (data.success) {
-                        toastr.success('Service request submitted successfully!');
+                        toastr.success(data.message || 'Service request submitted successfully!');
                         resetForm();
                     } else {
                         toastr.error(data.message || 'An error occurred. Please try again.');
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    // Handle fetch errors
+                    console.error('Error during fetch operation:', error);
                     toastr.error('An unexpected error occurred.');
                 });
         }

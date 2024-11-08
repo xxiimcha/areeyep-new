@@ -24,7 +24,6 @@ namespace AreEyeP.Controllers
             return View();
         }
 
-        // GET: /Client/ServiceRequest
         [HttpGet("/Client/ServiceRequest/Create")]
         public async Task<IActionResult> Create()
         {
@@ -36,10 +35,42 @@ namespace AreEyeP.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            // Log the user ID to the server console
+            Console.WriteLine($"User ID: {userId}");
+
+            // Pass the user ID to the view using ViewBag
+            ViewBag.UserId = userId;
+
+            // Fetch approved deceased records linked to the logged-in user, along with their CatacombID
+            var deceasedList = await _context.Deceased
+                .Where(d => _context.BurialApplications
+                    .Any(b => b.Id == d.ApplicationId && b.Status == "Approved" && b.UserId == userId))
+                .Select(d => new
+                {
+                    d.Id,
+                    d.FirstName,
+                    d.LastName,
+                    CatacombID = _context.Catacombs
+                        .Where(c => c.DeceasedInformation == d.Id.ToString()) // Convert d.Id to string
+                        .Select(c => c.CatacombID)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+
+            // Log the deceased records for debugging
+            Console.WriteLine($"Deceased records found: {deceasedList.Count}");
+            deceasedList.ForEach(deceased =>
+                Console.WriteLine($"Deceased ID: {deceased.Id}, Name: {deceased.FirstName} {deceased.LastName}, CatacombID: {deceased.CatacombID}")
+            );
+
+            // Pass the deceased list to the view
+            ViewBag.DeceasedList = deceasedList;
+
             // Fetch the services from the database
             var services = await _context.Services.ToListAsync();
+            Console.WriteLine($"Services count: {services.Count}");
 
-            // Pass the services to the view
+            // Pass the services to the view as the model
             return View("ServiceRequest", services);
         }
 
