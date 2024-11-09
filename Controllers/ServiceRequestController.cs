@@ -2,10 +2,9 @@
 using AreEyeP.Data;
 using AreEyeP.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
+using System;
 using System.Threading.Tasks;
-using System.Linq;
-using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace AreEyeP.Controllers
 {
@@ -18,51 +17,37 @@ namespace AreEyeP.Controllers
             _context = context;
         }
 
-        // GET: /ServiceRequest/Create
-        public async Task<IActionResult> Create()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([FromBody] ServiceRequest serviceRequest)
         {
-            // Retrieve the current user ID, with error handling if user is not authenticated
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdClaim))
+            // Log each field to verify it is being received
+            Console.WriteLine($"DeceasedId: {serviceRequest.DeceasedId}");
+            Console.WriteLine($"DateOfService: {serviceRequest.DateOfService}");
+            Console.WriteLine($"ServiceType: {serviceRequest.ServiceType}");
+            Console.WriteLine($"UrgencyLevel: {serviceRequest.UrgencyLevel}");
+            Console.WriteLine($"SpecialInstructions: {serviceRequest.SpecialInstructions}");
+            Console.WriteLine($"UserId: {serviceRequest.UserId}");
+
+            if (ModelState.IsValid)
             {
-                Console.WriteLine("User is not authenticated.");
-                return RedirectToAction("Login", "Account");
+                // Set additional fields if necessary
+                serviceRequest.Staff ??= "Unassigned";
+                serviceRequest.Status ??= "Pending";
+                serviceRequest.StartTime = serviceRequest.StartTime == default ? TimeSpan.FromHours(9) : serviceRequest.StartTime;
+                serviceRequest.EndTime = serviceRequest.EndTime == default ? TimeSpan.FromHours(17) : serviceRequest.EndTime;
+
+                _context.ServiceRequests.Add(serviceRequest);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Service request created successfully!" });
             }
 
-            int currentUserId = int.Parse(userIdClaim);
-            Console.WriteLine($"Current User ID: {currentUserId}");
+            // Log ModelState errors for debugging
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            Console.WriteLine("ModelState errors: " + string.Join(", ", errors));
 
-            try
-            {
-                // Get approved deceased records linked to the logged-in user
-                var deceasedList = await _context.Deceased
-                    .Where(d => _context.BurialApplications
-                        .Any(b => b.Id == d.ApplicationId && b.Status == "Approved" && b.UserId == currentUserId))
-                    .ToListAsync();
-
-                Console.WriteLine($"Deceased records found: {deceasedList.Count}");
-                deceasedList.ForEach(deceased =>
-                    Console.WriteLine($"Deceased ID: {deceased.Id}, Name: {deceased.FirstName} {deceased.LastName}")
-                );
-
-                ViewBag.DeceasedList = deceasedList;
-
-                // Retrieve available services
-                var services = await _context.Services.ToListAsync();
-                Console.WriteLine($"Services count: {services.Count}");
-                services.ForEach(service =>
-                    Console.WriteLine($"Service ID: {service.Id}, Name: {service.ServiceName}, Price Range: {service.MinPrice} - {service.MaxPrice}")
-                );
-
-                return View(services);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while loading data: {ex.Message}");
-                return View("Error", new { message = "An error occurred while loading the service request page." });
-            }
+            return Json(new { success = false, message = "Failed to create service request. Invalid data.", errors });
         }
-
-        
     }
 }

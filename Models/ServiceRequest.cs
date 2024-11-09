@@ -9,39 +9,39 @@ namespace AreEyeP.Models
         public int Id { get; set; }
 
         [Required]
-        public string DeceasedId { get; set; }
+        public string DeceasedId { get; set; } // String to match nvarchar(MAX)
 
         [Required]
         public DateTime DateOfService { get; set; }
 
         [Required]
-        public string ServiceType { get; set; }
+        public string ServiceType { get; set; } // String to match nvarchar(MAX)
 
         [Required]
-        public string UrgencyLevel { get; set; }
+        public string UrgencyLevel { get; set; } // String to match nvarchar(MAX)
 
-        public string SpecialInstructions { get; set; }
-
-        [Required]
-        public string Staff { get; set; } // Assigned staff for the service
+        public string SpecialInstructions { get; set; } // Optional, string to match nvarchar(MAX)
 
         [Required]
-        public string Status { get; set; } // Status of the service request (e.g., Pending, Approved, Completed)
+        public string Staff { get; set; } = "Unassigned"; // Default value
 
         [Required]
-        public TimeSpan StartTime { get; set; }
+        public string Status { get; set; } = "Pending"; // Default value
 
         [Required]
-        public TimeSpan EndTime { get; set; }
+        public TimeSpan StartTime { get; set; } = TimeSpan.FromHours(9); // Default start time
 
-        // User who created the service request
         [Required]
-        public int UserId { get; set; } // Foreign key to link the request with a user
+        public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(17); // Default end time
 
-        // Timestamp fields
+        public decimal? Amount { get; set; } // Optional
+
         [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Set default to current time
+        public int UserId { get; set; }
 
-        public DateTime? UpdatedAt { get; set; } // Nullable to track when the record is updated
+        [Required]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedAt { get; set; }
     }
 }
