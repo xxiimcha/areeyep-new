@@ -143,5 +143,27 @@ namespace AreEyeP.Controllers
 
             return View(application);
         }
+
+        // GET: /Client/ServiceRequest/Requests
+        [HttpGet("/Client/ServiceRequest/Requests")]
+        public async Task<IActionResult> Requests()
+        {
+            // Fetch the current user's ID from the session
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Retrieve all service requests for the logged-in user
+            var serviceRequests = await _context.ServiceRequests
+                                                .Where(sr => sr.UserId == userId)
+                                                .ToListAsync();
+
+            // Pass the service requests to the view
+            return View("ManageServiceRequests", serviceRequests);
+        }
+
     }
 }
