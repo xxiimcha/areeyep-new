@@ -165,5 +165,38 @@ namespace AreEyeP.Controllers
             return View("ManageServiceRequests", serviceRequests);
         }
 
+        // GET: /Client/ManageRelatives
+        [HttpGet("/Client/ManageRelatives")]
+        public async Task<IActionResult> ManageRelatives()
+        {
+            // Fetch the current user's ID from the session
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Fetch deceased records linked to the logged-in user
+            var relatives = await _context.Deceased
+                .Where(d => _context.BurialApplications
+                    .Any(b => b.Id == d.ApplicationId && b.UserId == userId))
+                .Select(d => new
+                {
+                    d.Id,
+                    d.FirstName,
+                    d.LastName,
+                    d.DateOfBirth,
+                    d.DateOfDeath,
+                    d.Address,
+                    d.CauseOfDeath,
+                    d.Gender,
+                    d.ApplicationId
+                })
+                .ToListAsync();
+
+            return View("ManageRelatives", relatives);
+        }
+
     }
 }

@@ -10,13 +10,22 @@
         <div class="sb-sidenav-menu">
             <div class="nav" style="color: white;">
                 <!-- Ensuring the text remains white -->
+                <!-- Common Navigation Items Visible to All Users -->
+                <a class="nav-link text-white" href="/">
+                    <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
+                    Home
+                </a>
+                <a class="nav-link text-white" href="/Notifications">
+                    <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
+                    Notifications
+                </a>
+
                 @* Admin Role Sidebar Menu *@
                 @if (userRole == "admin")
                 {
                     <a class="nav-link text-white" href="/Admin/Dashboard">
-                        <!-- Added 'text-white' class to make text white -->
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
-                        Home
+                        Dashboard
                     </a>
                     <a class="nav-link text-white" href="/Admin/User">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
@@ -25,10 +34,6 @@
                     <a class="nav-link text-white" href="/Admin/Payments">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
                         Payments
-                    </a>
-                    <a class="nav-link text-white" href="/Admin/Notifications">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
-                        Notifications
                     </a>
                     <a class="nav-link text-white" href="/Admin/Services">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-briefcase"></i></div>
@@ -49,7 +54,7 @@
                 {
                     <a class="nav-link text-white" href="/Staff/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
-                        Home
+                        Dashboard
                     </a>
                     <a class="nav-link text-white" href="/Staff/Profile">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
@@ -67,10 +72,6 @@
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-calendar-alt"></i></div>
                         Schedule
                     </a>
-                    <a class="nav-link text-white" href="/Staff/Notifications">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
-                        Notifications
-                    </a>
                 }
 
                 @* LGU Role Sidebar Menu *@
@@ -78,7 +79,7 @@
                 {
                     <a class="nav-link text-white" href="/LGU/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
-                        Home
+                        Dashboard
                     </a>
                     <a class="nav-link text-white" href="/Admin/Application">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-compass"></i></div>
@@ -95,7 +96,7 @@
                 {
                     <a class="nav-link text-white" href="/Client/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
-                        Home
+                        Dashboard
                     </a>
                     <a class="nav-link text-white" href="/Client/ManageRelatives">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
@@ -135,10 +136,6 @@
                     <a class="nav-link text-white" href="/Client/PaymentHistory">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
                         Payments
-                    </a>
-                    <a class="nav-link text-white" href="/Client/Notification">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
-                        Notification
                     </a>
                 }
             </div>

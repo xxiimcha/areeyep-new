@@ -1,0 +1,133 @@
+﻿@{
+    ViewData["Title"] = "Notifications";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
+    <style>
+        .notification-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+
+            .notification-card h5 {
+                margin: 0;
+                font-weight: bold;
+            }
+
+            .notification-card p {
+                margin: 5px 0 0;
+            }
+
+            .notification-card .date {
+                font-size: 0.9em;
+                color: #888;
+            }
+    </style>
+</head>
+<body class="sb-nav-fixed">
+    <!-- Render the Header Partial -->
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav">
+        <!-- Render the Sidebar Partial -->
+        @Html.Partial("_Sidebar")
+
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h2 class="text-center mt-4 mb-4">Notifications</h2>
+
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-tabs" id="notificationTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="application-tab" data-bs-toggle="tab" href="#application" role="tab" aria-controls="application" aria-selected="true">Application</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="service-requests-tab" data-bs-toggle="tab" href="#service-requests" role="tab" aria-controls="service-requests" aria-selected="false">Service Requests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="payments-tab" data-bs-toggle="tab" href="#payments" role="tab" aria-controls="payments" aria-selected="false">Payments</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="renewals-tab" data-bs-toggle="tab" href="#renewals" role="tab" aria-controls="renewals" aria-selected="false">Renewals</a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="notificationTabContent">
+                        <!-- Application Tab -->
+                        <div class="tab-pane fade show active" id="application" role="tabpanel" aria-labelledby="application-tab">
+                            <div class="notification-card mt-3">
+                                <h5>Application Status Update</h5>
+                                <p>Your recent burial application has been approved. Please check your email for further instructions.</p>
+                                <p class="date">Posted on: November 1, 2024</p>
+                            </div>
+                            <div class="notification-card">
+                                <h5>New Application Requirements</h5>
+                                <p>All new applications must include updated contact information and supporting documents.</p>
+                                <p class="date">Posted on: October 15, 2024</p>
+                            </div>
+                        </div>
+
+                        <!-- Service Requests Tab -->
+                        <div class="tab-pane fade" id="service-requests" role="tabpanel" aria-labelledby="service-requests-tab">
+                            <div class="notification-card mt-3">
+                                <h5>Service Scheduling Notice</h5>
+                                <p>Starting November 15, 2024, all services must be scheduled at least 3 days in advance to ensure availability.</p>
+                                <p class="date">Posted on: November 1, 2024</p>
+                            </div>
+                            <div class="notification-card">
+                                <h5>New Burial Plot Availability</h5>
+                                <p>New burial plots are available in Section C. Contact the office for more details on pricing and reservations.</p>
+                                <p class="date">Posted on: October 28, 2024</p>
+                            </div>
+                        </div>
+
+                        <!-- Payments Tab -->
+                        <div class="tab-pane fade" id="payments" role="tabpanel" aria-labelledby="payments-tab">
+                            <div class="notification-card mt-3">
+                                <h5>Payment Reminder</h5>
+                                <p>Please be reminded that payments for burial plot maintenance fees are due by the end of the month.</p>
+                                <p class="date">Posted on: November 1, 2024</p>
+                            </div>
+                            <div class="notification-card">
+                                <h5>Late Fee Policy Update</h5>
+                                <p>Effective December 1, 2024, a late fee will be applied to all overdue maintenance payments.</p>
+                                <p class="date">Posted on: October 10, 2024</p>
+                            </div>
+                        </div>
+
+                        <!-- Renewals Tab -->
+                        <div class="tab-pane fade" id="renewals" role="tabpanel" aria-labelledby="renewals-tab">
+                            <div class="notification-card mt-3">
+                                <h5>Renewal Notice</h5>
+                                <p>Your burial plot maintenance contract is set to expire soon. Please renew to avoid any interruptions.</p>
+                                <p class="date">Posted on: October 20, 2024</p>
+                            </div>
+                            <div class="notification-card">
+                                <h5>Document Update Required for Renewal</h5>
+                                <p>All clients must update their documentation before renewing their burial plot maintenance contract.</p>
+                                <p class="date">Posted on: October 5, 2024</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Include the Script Links Partial -->
+    @Html.Partial("_ScriptLinks")
+</body>
+</html>

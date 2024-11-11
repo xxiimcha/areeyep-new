@@ -33,6 +33,11 @@ namespace AreEyeP.Models
         [StringLength(100, ErrorMessage = "Reference number cannot exceed 100 characters.")]
         public string ReferenceNumber { get; set; }
 
+        // New column for Type of Service
+        [Required]
+        [StringLength(100, ErrorMessage = "Service type cannot exceed 100 characters.")]
+        public string ServiceType { get; set; }
+
         // Navigation property to link with the BurialApplication entity
         [ForeignKey("ApplicationId")]
         public virtual BurialApplication BurialApplication { get; set; }

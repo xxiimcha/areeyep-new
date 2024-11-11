@@ -137,5 +137,6 @@ namespace AreEyeP.Controllers
             }
             return View("Payments", await _context.Payments.ToListAsync());
         }
+
     }
 }
