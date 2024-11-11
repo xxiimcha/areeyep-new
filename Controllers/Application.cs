@@ -53,7 +53,8 @@ namespace AreEyeP.Controllers
                         PaymentMethod = "Unspecified",             // Set a default payment method or customize as needed
                         Status = "Pending",                        // Initial payment status
                         PaymentDate = DateTime.Now,                // Current date as the payment date
-                        ReferenceNumber = GenerateReferenceNumber() // Generate a reference number if required
+                        ReferenceNumber = GenerateReferenceNumber(), // Generate a reference number if required
+                        ServiceType = "Burial"
                     };
 
                     // Add the payment record to the ClientPayments table
