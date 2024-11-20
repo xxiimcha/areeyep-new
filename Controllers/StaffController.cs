@@ -3,12 +3,13 @@ using AreEyeP.Data; // Ensure you have the right namespace for your DbContext
 using AreEyeP.Models;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace AreEyeP.Controllers
 {
     public class StaffController : Controller
     {
-        private readonly ApplicationDbContext _context; // Reference to your database context
+        private readonly ApplicationDbContext _context;
 
         public StaffController(ApplicationDbContext context)
         {
@@ -42,16 +43,18 @@ namespace AreEyeP.Controllers
         }
 
         // GET: /Staff/Services
-        public IActionResult Services()
+        public async Task<IActionResult> Services()
         {
             if (!IsAuthorized("staff"))
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            // Fetch services data for staff (replace with actual logic if necessary)
-            return View();
+            var services = await _context.Services.ToListAsync();
+            // Specify the path to the view in the Shared folder
+            return View("/Views/Shared/Services.cshtml", services);
         }
+
 
         // GET: /Staff/Catacombs
         public IActionResult Catacombs()

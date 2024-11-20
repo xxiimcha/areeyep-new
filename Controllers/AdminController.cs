@@ -138,5 +138,57 @@ namespace AreEyeP.Controllers
             return View("Payments", await _context.Payments.ToListAsync());
         }
 
+        // Define the ServiceRequestViewModel within the AdminController
+        public class ServiceRequestViewModel
+        {
+            public int Id { get; set; }
+            public string DeceasedId { get; set; }
+            public DateTime DateOfService { get; set; }
+            public string ServiceType { get; set; }
+            public string UrgencyLevel { get; set; }
+            public string Staff { get; set; }
+            public string Status { get; set; }
+            public decimal? Amount { get; set; }
+            public DateTime CreatedAt { get; set; }
+        }
+
+        // GET: /Admin/ServiceRequest
+        public async Task<IActionResult> ServiceRequest()
+        {
+            var requests = await _context.ServiceRequests
+                .Select(r => new ServiceRequestViewModel
+                {
+                    Id = r.Id,
+                    DeceasedId = r.DeceasedId,
+                    DateOfService = r.DateOfService,
+                    ServiceType = r.ServiceType,
+                    UrgencyLevel = r.UrgencyLevel,
+                    Staff = r.Staff,
+                    Status = r.Status,
+                    Amount = r.Amount,
+                    CreatedAt = r.CreatedAt
+                })
+                .ToListAsync();
+
+            return View(requests);
+        }
+
+        // POST: /Admin/UpdateRequestStatus
+        [HttpPost]
+        public async Task<IActionResult> UpdateRequestStatus(int id, string status)
+        {
+            var request = await _context.ServiceRequests.FindAsync(id);
+            if (request == null)
+            {
+                return Json(new { success = false, message = "Request not found." });
+            }
+
+            request.Status = status;
+            request.UpdatedAt = DateTime.UtcNow;
+            _context.ServiceRequests.Update(request);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Status updated successfully." });
+        }
     }
 }

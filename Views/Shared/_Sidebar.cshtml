@@ -9,12 +9,6 @@
         <!-- Changed background color to green -->
         <div class="sb-sidenav-menu">
             <div class="nav" style="color: white;">
-                <!-- Ensuring the text remains white -->
-                <a class="nav-link text-white" href="/Notifications">
-                    <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
-                    Notifications
-                </a>
-
                 @* Admin Role Sidebar Menu *@
                 @if (userRole == "admin")
                 {
@@ -25,22 +19,6 @@
                     <a class="nav-link text-white" href="/Admin/User">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
                         User
-                    </a>
-                    <a class="nav-link text-white" href="/Admin/Payments">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
-                        Payments
-                    </a>
-                    <a class="nav-link text-white" href="/Admin/Services">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-briefcase"></i></div>
-                        Services
-                    </a>
-                    <a class="nav-link text-white" href="/Admin/Catacombs">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-layer-group"></i></div>
-                        Catacombs
-                    </a>
-                    <a class="nav-link text-white" href="/Admin/Reports">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-cogs"></i></div>
-                        Generate Reports
                     </a>
                 }
 
@@ -55,13 +33,13 @@
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
                         Manage Profile
                     </a>
-                    <a class="nav-link text-white" href="/Staff/Services">
+                    <a class="nav-link text-white" href="/Admin/Services">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-briefcase"></i></div>
                         Services
                     </a>
-                    <a class="nav-link text-white" href="/Staff/Catacombs">
+                    <a class="nav-link text-white" href="/Admin/Catacombs">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-layer-group"></i></div>
-                        Catacomb
+                        Catacombs
                     </a>
                     <a class="nav-link text-white" href="/Staff/Schedule">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-calendar-alt"></i></div>
@@ -80,7 +58,19 @@
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-compass"></i></div>
                         Application
                     </a>
-                    <a class="nav-link text-white" href="/LGU/Reports">
+                    <a class="nav-link text-white" href="/Admin/Payments">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
+                        Payments
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Services">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-briefcase"></i></div>
+                        Services
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Catacombs">
+                        <div class="sb-nav-link-icon text-white"><i class="fas fa-layer-group"></i></div>
+                        Catacombs
+                    </a>
+                    <a class="nav-link text-white" href="/Admin/Reports">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-cogs"></i></div>
                         Generate Reports
                     </a>
@@ -133,6 +123,11 @@
                         Payments
                     </a>
                 }
+                <!-- Ensuring the text remains white -->
+                <a class="nav-link text-white" href="/Notifications">
+                    <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
+                    Notifications
+                </a>
             </div>
         </div>
     </nav>
