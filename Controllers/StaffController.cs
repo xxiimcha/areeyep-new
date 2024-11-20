@@ -159,9 +159,22 @@ namespace AreEyeP.Controllers
         // GET: /Staff/Schedule
         public IActionResult Schedule()
         {
-            return View(); // Make sure this returns the correct view name
-        }
+            var serviceRequests = from sr in _context.ServiceRequests
+                                  join s in _context.Services on Convert.ToInt32(sr.ServiceType) equals s.Id
+                                  join d in _context.Deceased on Convert.ToInt32(sr.DeceasedId) equals d.Id
+                                  select new
+                                  {
+                                      sr.Id,
+                                      DeceasedName = d.FirstName + " " + d.LastName,
+                                      sr.DateOfService,
+                                      ServiceName = s.ServiceName,
+                                      sr.UrgencyLevel,
+                                      sr.Status,
+                                      sr.Staff
+                                  };
 
+            return View(serviceRequests.ToList());
+        }
 
         // GET: /Staff/Notifications
         public IActionResult Notifications()

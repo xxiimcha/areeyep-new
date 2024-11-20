@@ -1,8 +1,8 @@
-﻿@model IEnumerable<AreEyeP.Models.Schedule>
+﻿@model IEnumerable<dynamic> // Since we are selecting an anonymous type in the controller
 
 @{
-    Layout = null; // Not using a shared layout file
-    ViewData["Title"] = "Schedule Details";
+    Layout = null;  // Not using the _Layout.cshtml file for this specific page
+    ViewData["Title"] = "Service Management";
 }
 
 <!DOCTYPE html>
@@ -12,155 +12,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
 
-    <!-- Include your CSS and JS libraries here -->
+    <!-- Include the CSS Links Partial -->
     @Html.Partial("_CSSLinks")
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body class="sb-nav-fixed">
-    <!-- Include the Header Partial -->
+    <!-- Render the Header Partial -->
     @Html.Partial("_Header")
 
     <div id="layoutSidenav">
-        <!-- Include the Sidebar Partial -->
+        <!-- Render the Sidebar Partial -->
         @Html.Partial("_Sidebar")
 
         <div id="layoutSidenav_content">
             <main>
-                <div class="container mt-4">
-                    <div class="card">
-                        <div class="card-header bg-success text-white">
-                            <h4>Schedule Details</h4>
-                        </div>
-                        <div class="card-body">
-                            <form id="scheduleForm">
-                                <div class="row mb-3">
-                                    <div class="col-md-4">
-                                        <label for="clientName" class="form-label">Name of client</label>
-                                        <input type="text" id="clientName" class="form-control" placeholder="Name of Client" required />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="scheduleDate" class="form-label">Date</label>
-                                        <input type="date" id="scheduleDate" class="form-control" required />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="scheduleDetails" class="form-label">Details</label>
-                                        <textarea id="scheduleDetails" class="form-control" rows="2" placeholder="Details"></textarea>
-                                    </div>
-                                </div>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">Service Requests</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item active">Service Requests</li>
+                    </ol>
 
-                                <div class="row mb-3">
-                                    <div class="col-md-3">
-                                        <label for="startTime" class="form-label">Start Time</label>
-                                        <input type="time" id="startTime" class="form-control" required />
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="endTime" class="form-label">End Time</label>
-                                        <input type="time" id="endTime" class="form-control" required />
-                                    </div>
-                                    <div class="col-md-6 d-flex justify-content-end align-items-center">
-                                        <button type="button" id="editBtn" class="btn btn-outline-secondary">Edit</button>
-                                    </div>
-                                </div>
-                            </form>
-
-                            <div class="input-group mb-3">
-                                <span class="input-group-text">Search</span>
-                                <input type="text" id="searchBox" class="form-control" placeholder="Search" />
-                            </div>
-
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead class="bg-success text-white">
+                    <!-- Service Requests List Table -->
+                    <div class="table-responsive">
+                        <table id="serviceRequestsTable" class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Deceased Name</th>
+                                    <th>Date of Service</th>
+                                    <th>Service Type</th>
+                                    <th>Urgency Level</th>
+                                    <th>Status</th>
+                                    <th>Staff</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    int i = 1;
+                                    foreach (var request in Model)
+                                    {
                                         <tr>
-                                            <th>Schedule ID</th>
-                                            <th>Schedule Details</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
+                                            <td>@i</td>
+                                            <td>@request.DeceasedName</td>
+                                            <td>@(request.DateOfService?.ToString("yyyy-MM-dd") ?? "N/A")</td>
+                                            <td>@request.ServiceName</td>
+                                            <td>@request.UrgencyLevel</td>
+                                            <td>@request.Status</td>
+                                            <td>@request.Staff</td>
+                                            <td>
+                                                <button class="btn btn-info btn-sm" onclick="viewRequest('@request.Id', '@request.DeceasedName', '@request.DateOfService', '@request.ServiceName', '@request.UrgencyLevel', '@request.Status', '@request.Staff')">
+                                                    <i class="fas fa-eye"></i> View
+                                                </button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody id="scheduleTableBody">
-                                        @if (Model != null && Model.Any())
-                                        {
-                                            foreach (var schedule in Model)
-                                            {
-                                                <tr id="schedule-@schedule.Id">
-                                                    <td>@schedule.ScheduleID</td>
-                                                    <td><a href="#" class="view-link" data-id="@schedule.Id" onclick="viewSchedule('@schedule.Id')">View</a></td>
-                                                    <td>@schedule.Status</td>
-                                                    <td>
-                                                        <button class="btn btn-warning btn-sm" onclick="editSchedule('@schedule.Id')">Edit</button>
-                                                        <button class="btn btn-danger btn-sm" onclick="deleteSchedule('@schedule.Id')">Delete</button>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <tr>
-                                                <td colspan="4" class="text-center">No schedules available.</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div class="d-flex justify-content-start mt-4">
-                                <button class="btn btn-success me-2" onclick="addSchedule()">Add</button>
-                                <button class="btn btn-primary me-2" onclick="updateSchedule()">Update</button>
-                                <button class="btn btn-danger" onclick="deleteSchedule()">Delete</button>
-                            </div>
-                        </div>
+                                        i++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="8">No service requests found.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Include your JavaScript libraries here -->
+    <!-- Modal for Viewing Service Request Details -->
+    <div class="modal fade" id="viewRequestModal" tabindex="-1" aria-labelledby="viewRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewRequestModalLabel">Service Request Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>Deceased Name:</strong> <span id="modalDeceasedName"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Date of Service:</strong> <span id="modalDateOfService"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Service Type:</strong> <span id="modalServiceType"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Urgency Level:</strong> <span id="modalUrgencyLevel"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> <span id="modalStatus"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Staff:</strong> <span id="modalStaff"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Script Links Partial -->
     @Html.Partial("_ScriptLinks")
 
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Initialize DataTable and Custom Scripts -->
     <script>
-        // Sample JavaScript functions to handle adding, updating, and deleting schedules
-        function addSchedule() {
-            // Logic to add a new schedule
-            alert('Add schedule functionality to be implemented.');
-        }
-
-        function updateSchedule() {
-            // Logic to update the selected schedule
-            alert('Update schedule functionality to be implemented.');
-        }
-
-        function deleteSchedule(id) {
-            if (confirm("Are you sure you want to delete this schedule?")) {
-                // Logic to delete the schedule by ID
-                alert('Delete schedule functionality to be implemented.');
-            }
-        }
-
-        function viewSchedule(id) {
-            // Logic to view the schedule details
-            alert('View schedule details functionality to be implemented.');
-        }
-
-        function editSchedule(id) {
-            // Logic to edit the schedule
-            alert('Edit schedule functionality to be implemented.');
-        }
-
-        // Search functionality
-        document.getElementById('searchBox').addEventListener('input', function () {
-            let searchTerm = this.value.toLowerCase();
-            let rows = document.querySelectorAll('#scheduleTableBody tr');
-            rows.forEach(row => {
-                let scheduleID = row.children[0].textContent.toLowerCase();
-                let scheduleDetails = row.children[1].textContent.toLowerCase();
-                if (scheduleID.includes(searchTerm) || scheduleDetails.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+        $(document).ready(function () {
+            // Initialize DataTables for the service requests table
+            $('#serviceRequestsTable').DataTable({
+                "paging": true,
+                "searching": true,
+                "ordering": true,
+                "info": true
             });
         });
+
+        // Function to handle viewing a request
+        function viewRequest(id, deceasedName, dateOfService, serviceName, urgencyLevel, status, staff) {
+            // Populate the modal with the data from the row
+            $('#modalDeceasedName').text(deceasedName);
+            $('#modalDateOfService').text(dateOfService != "null" ? dateOfService : "N/A");
+            $('#modalServiceType').text(serviceName);
+            $('#modalUrgencyLevel').text(urgencyLevel);
+            $('#modalStatus').text(status);
+            $('#modalStaff').text(staff);
+
+            // Show the modal
+            var viewModal = new bootstrap.Modal(document.getElementById('viewRequestModal'));
+            viewModal.show();
+        }
     </script>
 </body>
 </html>
