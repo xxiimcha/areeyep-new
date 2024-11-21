@@ -170,13 +170,14 @@ namespace AreEyeP.Controllers
                                       ServiceName = s.ServiceName,
                                       sr.UrgencyLevel,
                                       sr.Status,
-                                      sr.Staff
+                                      sr.Staff,
+                                      StartTime = sr.StartTime != null ? sr.StartTime : (TimeSpan?)null,  // Handle nullable TimeSpan
+                                      EndTime = sr.EndTime != null ? sr.EndTime : (TimeSpan?)null          // Handle nullable TimeSpan
                                   };
 
             return View(serviceRequests.ToList());
         }
 
-        // GET: /Staff/Notifications
         public IActionResult Notifications()
         {
             if (!IsAuthorized("staff"))

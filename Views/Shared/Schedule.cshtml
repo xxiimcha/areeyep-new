@@ -62,10 +62,19 @@
                                             <td>@(request.DateOfService?.ToString("yyyy-MM-dd") ?? "N/A")</td>
                                             <td>@request.ServiceName</td>
                                             <td>@request.UrgencyLevel</td>
-                                            <td>@request.Status</td>
-                                            <td>@request.Staff</td>
+                                            <td><span class="badge bg-info text-dark">@request.Status</span></td>
                                             <td>
-                                                <button class="btn btn-info btn-sm" onclick="viewRequest('@request.Id', '@request.DeceasedName', '@request.DateOfService', '@request.ServiceName', '@request.UrgencyLevel', '@request.Status', '@request.Staff')">
+                                                @if (!string.IsNullOrEmpty(request.Staff))
+                                                {
+                                                    <span class="badge bg-success">@request.Staff</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Unassigned</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-info btn-sm" onclick="viewRequest('@request.Id', '@request.DeceasedName', '@request.DateOfService', '@request.ServiceName', '@request.UrgencyLevel', '@request.Status', '@request.Staff', '@request.StartTime', '@request.EndTime')">
                                                     <i class="fas fa-eye"></i> View
                                                 </button>
                                             </td>
@@ -87,35 +96,114 @@
         </div>
     </div>
 
-    <!-- Modal for Viewing Service Request Details -->
+    <!-- Modal for Viewing and Assigning Staff to Service Request -->
     <div class="modal fade" id="viewRequestModal" tabindex="-1" aria-labelledby="viewRequestModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="viewRequestModalLabel">Service Request Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <strong>Deceased Name:</strong> <span id="modalDeceasedName"></span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Date of Service:</strong> <span id="modalDateOfService"></span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Service Type:</strong> <span id="modalServiceType"></span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Urgency Level:</strong> <span id="modalUrgencyLevel"></span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Status:</strong> <span id="modalStatus"></span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Staff:</strong> <span id="modalStaff"></span>
-                    </div>
+                    <form id="serviceRequestForm">
+                        <!-- Service Request ID -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Service Request ID:</strong></label>
+                            <div id="modalRequestId"></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Deceased Name:</strong></label>
+                                <div id="modalDeceasedName"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Date of Service:</strong></label>
+                                <div id="modalDateOfService"></div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Service Type:</strong></label>
+                                <div id="modalServiceType"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Urgency Level:</strong></label>
+                                <div id="modalUrgencyLevel"></div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Status:</strong></label>
+                                <div id="modalStatus"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Staff:</strong></label>
+                                <div id="modalStaff"></div>
+                            </div>
+                        </div>
+                        <hr>
+                        <h5>Service Timing</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="startTime" class="form-label">Service Start Time</label>
+                                <input type="time" class="form-control" id="startTime" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="endTime" class="form-label">Estimated End Time</label>
+                                <input type="time" class="form-control" id="endTime" required>
+                            </div>
+                        </div>
+                        <hr>
+                        <h5>Assign Staff</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="staffName" class="form-label">Staff Name</label>
+                                <input type="text" class="form-control" id="staffName" placeholder="Enter Staff Name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="staffContact" class="form-label">Staff Contact Details</label>
+                                <input type="text" class="form-control" id="staffContact" placeholder="Enter Contact Details" required>
+                            </div>
+                        </div>
+                        <hr>
+                        <h5>Payment Section</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Is Payment Required Before Services?</label><br>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="paymentRequired" id="paymentYes" value="yes" onclick="togglePaymentOptions()" required>
+                                <label class="form-check-label" for="paymentYes">Yes</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="paymentRequired" id="paymentNo" value="no" onclick="togglePaymentOptions()" required>
+                                <label class="form-check-label" for="paymentNo">No</label>
+                            </div>
+                        </div>
+                        <div id="paymentOptions" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Select Payment Option</label><br>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentOption" id="downPayment" value="downPayment" onclick="toggleAmountField()">
+                                    <label class="form-check-label" for="downPayment">Down Payment</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentOption" id="fullPayment" value="fullPayment" onclick="toggleAmountField()">
+                                    <label class="form-check-label" for="fullPayment">Full Payment</label>
+                                </div>
+                            </div>
+                            <div class="mb-3" id="amountToBePaidField" style="display: none;">
+                                <label for="amountToBePaid" class="form-label">Amount to be Paid</label>
+                                <input type="number" class="form-control" id="amountToBePaid" placeholder="Enter Amount" min="0" required>
+                            </div>
+                        </div>
+                        <div id="paymentUponCompletion" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Payment will be made upon completing the request</label>
+                            </div>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="assignStaff()">Save Assignment</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -142,18 +230,101 @@
         });
 
         // Function to handle viewing a request
-        function viewRequest(id, deceasedName, dateOfService, serviceName, urgencyLevel, status, staff) {
+        function viewRequest(id, deceasedName, dateOfService, serviceName, urgencyLevel, status, staff, startTime, endTime) {
+            // Set the requestId on the modal for later use
+            $('#viewRequestModal').data('requestId', id);
+
             // Populate the modal with the data from the row
+            $('#modalRequestId').text(id);
             $('#modalDeceasedName').text(deceasedName);
-            $('#modalDateOfService').text(dateOfService != "null" ? dateOfService : "N/A");
+            $('#modalDateOfService').text(dateOfService !== "null" ? new Date(dateOfService).toLocaleString() : "N/A");
             $('#modalServiceType').text(serviceName);
             $('#modalUrgencyLevel').text(urgencyLevel);
             $('#modalStatus').text(status);
             $('#modalStaff').text(staff);
+            $('#startTime').val(startTime !== "null" ? startTime : "");
+            $('#endTime').val(endTime !== "null" ? endTime : "");
+
+            // Clear Assign Staff fields and payment options
+            $('#staffName').val('');
+            $('#staffContact').val('');
+            $('input[name="paymentRequired"]').prop('checked', false);
+            $('input[name="paymentOption"]').prop('checked', false);
+            $('#amountToBePaid').val('');
+            $('#paymentOptions').hide();
+            $('#paymentUponCompletion').hide();
+            $('#amountToBePaidField').hide();
 
             // Show the modal
             var viewModal = new bootstrap.Modal(document.getElementById('viewRequestModal'));
             viewModal.show();
+        }
+
+        // Function to toggle payment options based on whether payment is required
+        function togglePaymentOptions() {
+            const paymentRequired = $('input[name="paymentRequired"]:checked').val();
+            if (paymentRequired === 'yes') {
+                $('#paymentOptions').show();
+                $('#paymentUponCompletion').hide();
+            } else {
+                $('#paymentOptions').hide();
+                $('#paymentUponCompletion').show();
+                $('#amountToBePaidField').hide();
+            }
+        }
+
+        // Function to toggle the amount to be paid field
+        function toggleAmountField() {
+            const paymentOption = $('input[name="paymentOption"]:checked').val();
+            if (paymentOption === 'downPayment' || paymentOption === 'fullPayment') {
+                $('#amountToBePaidField').show();
+            } else {
+                $('#amountToBePaidField').hide();
+            }
+        }
+
+                // Function to handle assigning staff
+        function assignStaff() {
+            // Capture input data
+            const serviceRequestId = $('#viewRequestModal').data('requestId'); // Capture the serviceRequestId correctly
+            const staffName = $('#staffName').val();
+            const staffContact = $('#staffContact').val();
+            const paymentRequired = $('input[name="paymentRequired"]:checked').val() === 'yes';
+            const paymentOption = $('input[name="paymentOption"]:checked').val();
+            const amountToBePaid = $('#amountToBePaid').val();
+
+            // Log serviceRequestId to make sure it is not undefined
+            console.log("Service Request ID: ", serviceRequestId);
+
+            // Check if serviceRequestId is defined and if staffName and staffContact are provided
+            if (serviceRequestId && staffName && staffContact) {
+                // Make the AJAX call to assign staff and save payment
+                $.ajax({
+                    url: '/ServiceRequest/AssignStaffAndSavePayment',
+                    type: 'POST',
+                    data: {
+                        serviceRequestId: serviceRequestId,
+                        staffName: staffName,
+                        staffContact: staffContact,
+                        isPaymentRequired: paymentRequired,
+                        paymentOption: paymentOption,
+                        amountToBePaid: amountToBePaid
+                    },
+                    success: function (result) {
+                        if (result.success) {
+                            alert(result.message);
+                            location.reload();
+                        } else {
+                            alert(result.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert("An error occurred while saving the data: " + error);
+                    }
+                });
+            } else {
+                alert('Please fill in all required fields.');
+            }
         }
     </script>
 </body>

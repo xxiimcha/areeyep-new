@@ -38,6 +38,9 @@ namespace AreEyeP.Models
         [StringLength(100, ErrorMessage = "Service type cannot exceed 100 characters.")]
         public string ServiceType { get; set; }
 
+        [Required]
+        public int ServiceRequestId { get; set; } // Link to the ServiceRequest
+
         // Navigation property to link with the BurialApplication entity
         [ForeignKey("ApplicationId")]
         public virtual BurialApplication BurialApplication { get; set; }

@@ -43,5 +43,10 @@ namespace AreEyeP.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedAt { get; set; }
+
+        public string StaffContact { get; set; } // Optional, new field to store staff contact details
+
+        [Required]
+        public bool PaymentRequired { get; set; } = false; // New field to indicate if payment is required
     }
 }

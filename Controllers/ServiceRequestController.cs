@@ -3,6 +3,7 @@ using AreEyeP.Data;
 using AreEyeP.Models;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,7 @@ namespace AreEyeP.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Route("ServiceRequest/Create")]
         public async Task<IActionResult> Create([FromBody] ServiceRequest serviceRequest)
         {
             // Log each field to verify it is being received
@@ -28,6 +30,7 @@ namespace AreEyeP.Controllers
             Console.WriteLine($"UrgencyLevel: {serviceRequest.UrgencyLevel}");
             Console.WriteLine($"SpecialInstructions: {serviceRequest.SpecialInstructions}");
             Console.WriteLine($"UserId: {serviceRequest.UserId}");
+            Console.WriteLine($"PaymentRequired: {serviceRequest.PaymentRequired}");
 
             if (ModelState.IsValid)
             {
@@ -36,6 +39,9 @@ namespace AreEyeP.Controllers
                 serviceRequest.Status ??= "Pending";
                 serviceRequest.StartTime = serviceRequest.StartTime == default ? TimeSpan.FromHours(9) : serviceRequest.StartTime;
                 serviceRequest.EndTime = serviceRequest.EndTime == default ? TimeSpan.FromHours(17) : serviceRequest.EndTime;
+
+                // Convert PaymentRequired to a boolean value for storage in the database
+                serviceRequest.PaymentRequired = serviceRequest.PaymentRequired ? true : false;
 
                 _context.ServiceRequests.Add(serviceRequest);
                 await _context.SaveChangesAsync();
@@ -48,6 +54,48 @@ namespace AreEyeP.Controllers
             Console.WriteLine("ModelState errors: " + string.Join(", ", errors));
 
             return Json(new { success = false, message = "Failed to create service request. Invalid data.", errors });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AssignStaffAndSavePayment(int serviceRequestId, string staffName, string staffContact, bool isPaymentRequired, string paymentOption, decimal? amountToBePaid)
+        {
+            // Find the existing service request
+            var serviceRequest = await _context.ServiceRequests.FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
+            if (serviceRequest == null)
+            {
+                return Json(new { success = false, message = "Service request not found." });
+            }
+
+            // Update the service request with staff information
+            serviceRequest.Staff = staffName;
+            serviceRequest.StaffContact = staffContact;
+            serviceRequest.Status = "Assigned";
+            serviceRequest.UpdatedAt = DateTime.UtcNow;
+            serviceRequest.PaymentRequired = isPaymentRequired; // Assign the boolean value directly
+
+            // If payment is required, create a new payment entry
+            if (isPaymentRequired && amountToBePaid.HasValue)
+            {
+                var payment = new ClientPayment
+                {
+                    UserId = serviceRequest.UserId,
+                    ApplicationId = serviceRequest.Id, // Assuming ApplicationId is the same as service request Id in this context
+                    ServiceRequestId = serviceRequest.Id,
+                    Amount = amountToBePaid.Value,
+                    PaymentMethod = paymentOption == "downPayment" ? "Down Payment" : "Full Payment",
+                    Status = "Pending",
+                    PaymentDate = DateTime.UtcNow,
+                    ServiceType = serviceRequest.ServiceType,
+                    ReferenceNumber = "" // Set a default value or generate a reference number here
+                };
+
+                _context.ClientPayments.Add(payment);
+            }
+
+            // Save the changes to the database
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Staff assigned and payment details saved successfully." });
         }
     }
 }
