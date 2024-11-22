@@ -32,6 +32,9 @@ namespace AreEyeP.Controllers
             Console.WriteLine($"UserId: {serviceRequest.UserId}");
             Console.WriteLine($"PaymentRequired: {serviceRequest.PaymentRequired}");
 
+            // Remove StaffContact from model state validation
+            ModelState.Remove(nameof(serviceRequest.StaffContact));
+
             if (ModelState.IsValid)
             {
                 // Set additional fields if necessary
@@ -55,6 +58,7 @@ namespace AreEyeP.Controllers
 
             return Json(new { success = false, message = "Failed to create service request. Invalid data.", errors });
         }
+
 
         [HttpPost]
         public async Task<IActionResult> AssignStaffAndSavePayment(int serviceRequestId, string staffName, string staffContact, bool isPaymentRequired, string paymentOption, decimal? amountToBePaid)

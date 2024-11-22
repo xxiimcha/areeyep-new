@@ -9,32 +9,32 @@ namespace AreEyeP.Models
         public int Id { get; set; }
 
         [Required]
-        public string DeceasedId { get; set; } // String to match nvarchar(MAX)
+        public string DeceasedId { get; set; }
 
         [Required]
         public DateTime DateOfService { get; set; }
 
         [Required]
-        public string ServiceType { get; set; } // String to match nvarchar(MAX)
+        public string ServiceType { get; set; }
 
         [Required]
-        public string UrgencyLevel { get; set; } // String to match nvarchar(MAX)
+        public string UrgencyLevel { get; set; }
 
-        public string SpecialInstructions { get; set; } // Optional, string to match nvarchar(MAX)
-
-        [Required]
-        public string Staff { get; set; } = "Unassigned"; // Default value
+        public string SpecialInstructions { get; set; }
 
         [Required]
-        public string Status { get; set; } = "Pending"; // Default value
+        public string Staff { get; set; } = "Unassigned";
 
         [Required]
-        public TimeSpan StartTime { get; set; } = TimeSpan.FromHours(9); // Default start time
+        public string Status { get; set; } = "Pending";
 
         [Required]
-        public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(17); // Default end time
+        public TimeSpan StartTime { get; set; } = TimeSpan.FromHours(9);
 
-        public decimal? Amount { get; set; } // Optional
+        [Required]
+        public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(17);
+
+        public decimal? Amount { get; set; }
 
         [Required]
         public int UserId { get; set; }
@@ -44,9 +44,11 @@ namespace AreEyeP.Models
 
         public DateTime? UpdatedAt { get; set; }
 
-        public string StaffContact { get; set; } // Optional, new field to store staff contact details
+        // StaffContact is optional; no [Required] attribute.
+        public string StaffContact { get; set; }
 
         [Required]
-        public bool PaymentRequired { get; set; } = false; // New field to indicate if payment is required
+        public bool PaymentRequired { get; set; } = false;
     }
+
 }

@@ -144,7 +144,6 @@ namespace AreEyeP.Controllers
             return View(application);
         }
 
-        // GET: /Client/ServiceRequest/Requests
         [HttpGet("/Client/ServiceRequest/Requests")]
         public async Task<IActionResult> Requests()
         {
@@ -156,14 +155,29 @@ namespace AreEyeP.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            // Retrieve all service requests for the logged-in user
+            // Retrieve all service requests for the logged-in user and handle potential nulls
             var serviceRequests = await _context.ServiceRequests
-                                                .Where(sr => sr.UserId == userId)
-                                                .ToListAsync();
+                                     .Where(sr => sr.UserId == userId)
+                                     .Join(_context.Services,
+                                           sr => sr.ServiceType,
+                                           s => s.Id.ToString(),
+                                           (sr, s) => new ServiceRequest
+                                           {
+                                               Id = sr.Id,
+                                               DeceasedId = sr.DeceasedId ?? "N/A",
+                                               ServiceType = s.ServiceName ?? "Unknown", // Map ServiceName to ServiceType
+                                               UrgencyLevel = sr.UrgencyLevel ?? "Medium",
+                                               DateOfService = sr.DateOfService,
+                                               Status = sr.Status ?? "Pending",
+                                               Staff = sr.Staff ?? "Unassigned",
+                                               PaymentRequired = sr.PaymentRequired
+                                           })
+                                     .ToListAsync();
 
-            // Pass the service requests to the view
             return View("ManageServiceRequests", serviceRequests);
+
         }
+
 
         // GET: /Client/ManageRelatives
         [HttpGet("/Client/ManageRelatives")]
@@ -197,6 +211,43 @@ namespace AreEyeP.Controllers
 
             return View("ManageRelatives", relatives);
         }
+
+        [HttpGet("/Client/GetServiceRequestDetails/{id}")]
+        public async Task<IActionResult> GetServiceRequestDetails(int id)
+        {
+            try
+            {
+                var serviceRequest = await (from sr in _context.ServiceRequests
+                                            join s in _context.Services on sr.ServiceType equals s.Id.ToString()
+                                            where sr.Id == id
+                                            select new
+                                            {
+                                                sr.Id,
+                                                ServiceType = s.ServiceName,
+                                                sr.DateOfService,
+                                                sr.UrgencyLevel,
+                                                sr.Status,
+                                                sr.SpecialInstructions,
+                                                Staff = sr.Staff ?? "N/A",
+                                                StaffContact = sr.StaffContact ?? "N/A",
+                                                PaymentMessage = sr.PaymentRequired ? "Payment is required" : "Pay upon completion"
+                                            }).FirstOrDefaultAsync();
+
+                if (serviceRequest == null)
+                {
+                    return Json(new { success = false, message = "Service request not found." });
+                }
+
+                return Json(new { success = true, serviceRequest });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception for debugging
+                Console.WriteLine($"Error fetching service request details: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while fetching the details." });
+            }
+        }
+
 
     }
 }

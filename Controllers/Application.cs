@@ -92,8 +92,8 @@ namespace AreEyeP.Controllers
                                       .Where(a => a.Id == id)
                                       .Select(a => new
                                       {
-                                          a.FirstName,
-                                          a.LastName,
+                                          a.DeceasedFirstName,
+                                          a.DeceasedLastName,
                                           DateOfDeath = a.DateOfDeath.ToString("yyyy-MM-dd"),
                                           DateOfBurial = a.DateOfBurial.ToString("yyyy-MM-dd"),
                                           a.SpecialInstructions,

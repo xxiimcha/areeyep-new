@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-    @Html.Partial("_CSSLinks") <!-- Include your CSS partial here -->
+    @Html.Partial("_CSSLinks")
     <style>
         .full-width-container {
             padding: 0;
@@ -68,9 +68,7 @@
                                                 <td>@request.UrgencyLevel</td>
                                                 <td>@request.Status</td>
                                                 <td>
-                                                    <a href="@Url.Action("ViewServiceRequest", "Client", new { id = request.Id })" class="btn btn-primary btn-sm">View</a>
-                                                    <a href="@Url.Action("EditServiceRequest", "Client", new { id = request.Id })" class="btn btn-warning btn-sm">Edit</a>
-                                                    <button onclick="deleteServiceRequest(@request.Id)" class="btn btn-danger btn-sm">Delete</button>
+                                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewServiceRequestModal" onclick="loadServiceRequestDetails(@request.Id)">View</button>
                                                 </td>
                                             </tr>
                                             i++;
@@ -91,35 +89,82 @@
         </div>
     </div>
 
+    <!-- Modal for Viewing Service Request -->
+    <div class="modal fade" id="viewServiceRequestModal" tabindex="-1" aria-labelledby="viewServiceRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewServiceRequestModalLabel">Service Request Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="serviceRequestDetails">
+                        <!-- Service request details will be loaded dynamically -->
+                        <p>Loading...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @Html.Partial("_ScriptLinks")
     <script>
-        function deleteServiceRequest(id) {
-            if (confirm("Are you sure you want to delete this service request?")) {
-                const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
-                const tokenValue = tokenElement ? tokenElement.value : '';
+        // Function to load service request details dynamically
+        function loadServiceRequestDetails(id) {
+            const modalBody = document.getElementById("serviceRequestDetails");
 
-                fetch(`/Client/DeleteServiceRequest/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': tokenValue
+            // Show a loading message while fetching data
+            modalBody.innerHTML = "<p>Loading...</p>";
+
+            // Fetch the service request details
+            fetch(`/Client/GetServiceRequestDetails/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const request = data.serviceRequest;
+
+                        // Create modal content dynamically
+                        let content = `
+                            <dl class="row">
+                                <dt class="col-sm-4">Service Type:</dt>
+                                <dd class="col-sm-8">${request.serviceType}</dd>
+                                <dt class="col-sm-4">Date of Service:</dt>
+                                <dd class="col-sm-8">${new Date(request.dateOfService).toLocaleDateString()}</dd>
+                                <dt class="col-sm-4">Urgency Level:</dt>
+                                <dd class="col-sm-8">${request.urgencyLevel}</dd>
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">${request.status}</dd>
+                                <dt class="col-sm-4">Special Instructions:</dt>
+                                <dd class="col-sm-8">${request.specialInstructions || "N/A"}</dd>
+                                <dt class="col-sm-4">Payment:</dt>
+                                <dd class="col-sm-8">${request.paymentMessage}</dd>
+                            </dl>`;
+
+                        // Add Staff and StaffContact only when Status is not "Pending"
+                        if (request.status.toLowerCase() !== "pending") {
+                            content += `
+                                <dl class="row">
+                                    <dt class="col-sm-4">Staff:</dt>
+                                    <dd class="col-sm-8">${request.staff}</dd>
+                                    <dt class="col-sm-4">Staff Contact:</dt>
+                                    <dd class="col-sm-8">${request.staffContact}</dd>
+                                </dl>`;
+                        }
+
+                        modalBody.innerHTML = content;
+                    } else {
+                        modalBody.innerHTML = `<p class="text-danger">${data.message || "Failed to load service request details. Please try again."}</p>`;
                     }
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.message);
-                            location.reload();
-                        } else {
-                            alert(data.message || "Failed to delete the service request.");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                        alert("An error occurred while deleting the service request.");
-                    });
-            }
+                .catch(error => {
+                    console.error("Error fetching service request details:", error);
+                    modalBody.innerHTML = `<p class="text-danger">An error occurred while loading the details.</p>`;
+                });
         }
+
     </script>
 </body>
 </html>
