@@ -211,11 +211,30 @@
             // Initialize Leaflet map when the modal is shown
             $('#addCatacombModal').on('shown.bs.modal', function () {
                 if (!map) {
-                    map = L.map('map').setView([14.5995, 120.9842], 13); // Initial view centered on Manila
+                    map = L.map('map', {
+                        center: [10.302297, 123.956832], // Initial center point
+                        zoom: 17,                        // Closer zoom level
+                        minZoom: 15,                     // Prevent zooming out too far
+                        maxZoom: 20                      // Allow closer zooming
+                    });
+
+                    // Add OpenStreetMap tile layer
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     }).addTo(map);
 
+                    // Define max bounds for the map
+                    const southWest = L.latLng(10.311161, 123.953602); // Southwest boundary
+                    const northEast = L.latLng(10.293434, 123.960062); // Northeast boundary
+                    const bounds = L.latLngBounds(southWest, northEast);
+
+                    // Apply max bounds to the map
+                    map.setMaxBounds(bounds);
+                    map.on('drag', function () {
+                        map.panInsideBounds(bounds, { animate: true });
+                    });
+
+                    // Add marker on click with latitude and longitude
                     map.on('click', function (e) {
                         const { lat, lng } = e.latlng;
                         const location = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
@@ -230,6 +249,7 @@
                     });
                 }
             });
+
 
             $('#addCatacombModal').on('hidden.bs.modal', function () {
                 if (marker) {

@@ -142,8 +142,27 @@
             });
 
             // Initialize the Leaflet map
-            const map = L.map('leafletMap').setView([14.659648, 120.969960], 13);
+            const map = L.map('leafletMap', {
+                center: [10.302297, 123.956832], // Initial center
+                zoom: 17,                        // Initial zoom level
+                minZoom: 15,                     // Prevent zooming out too far
+                maxZoom: 20                      // Allow very close zoom
+            });
+
             console.log('Map initialized');
+
+            // Define max bounds for the map
+            const southWest = L.latLng(10.311161, 123.953602); // Southwest boundary
+            const northEast = L.latLng(10.293434, 123.960062); // Northeast boundary
+            const bounds = L.latLngBounds(southWest, northEast);
+
+            // Apply max bounds to the map
+            map.setMaxBounds(bounds);
+            map.on('drag', function () {
+                map.panInsideBounds(bounds, { animate: true });
+            });
+
+            console.log('Max bounds applied:', bounds);
 
             // Add OpenStreetMap tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -226,6 +245,7 @@
         function closeSidebar() {
             document.getElementById('catacombSidebar').style.display = 'none';
         }
+
     </script>
 </body>
 </html>
