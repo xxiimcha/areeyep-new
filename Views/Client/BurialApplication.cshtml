@@ -154,13 +154,20 @@
                                                     <input asp-for="Religion" class="form-control" value="Roman Catholic" readonly />
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label asp-for="AttachmentPath" class="form-label">Attach Requirement <small>(Death certificate, ID of the Applicant)</small></label>
+                                                    <label asp-for="AttachmentPath" class="form-label">Attach Requirements <small>(Death certificate, ID of the Applicant)</small></label>
                                                     <div class="input-group">
                                                         <span class="input-group-text bg-secondary text-white"><i class="fas fa-paperclip"></i></span>
-                                                        <input class="form-control" type="file" id="Attachment" name="AttachmentPath" accept=".pdf,.jpg,.jpeg,.png" required />
+                                                        <input class="form-control" type="file" name="AttachmentPath" id="Attachments" accept=".pdf,.jpg,.jpeg,.png" multiple />
                                                     </div>
                                                     <small class="text-muted">Accepted file types: PDF, JPG, PNG. Maximum file size: 5MB.</small>
                                                 </div>
+
+                                                <!-- Preview Section -->
+                                                <div id="attachmentPreview" class="mt-3">
+                                                    <h6>Uploaded Files:</h6>
+                                                    <ul id="fileList" class="list-group"></ul>
+                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
@@ -184,26 +191,51 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Get today's date in YYYY-MM-DD format
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const currentDate = `${year}-${month}-${day}`;
+            const fileInput = document.getElementById('Attachments');
+            const fileList = document.getElementById('fileList');
+            const filesData = []; // To store the file objects
 
-            // Set the min and default value for the DateOfBurial field
-            const dateOfBurialInput = document.getElementById('DateOfBurial');
-            if (dateOfBurialInput) {
-                dateOfBurialInput.setAttribute('min', currentDate); // Disable previous dates
-                dateOfBurialInput.setAttribute('value', currentDate); // Set current date as default
-            }
-        });
+            fileInput.addEventListener('change', function () {
+                const newFiles = Array.from(fileInput.files);
 
-        $(document).ready(function () {
+                newFiles.forEach((file) => {
+                    // Check for duplicates by name
+                    if (!filesData.some(existingFile => existingFile.name === file.name)) {
+                        filesData.push(file);
+
+                        // Add file to the preview list
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        listItem.innerHTML = `
+                            ${file.name}
+                            <button type="button" class="btn btn-danger btn-sm remove-btn">Remove</button>
+                        `;
+
+                        // Attach remove functionality
+                        listItem.querySelector('.remove-btn').addEventListener('click', function () {
+                            filesData.splice(filesData.indexOf(file), 1);
+                            listItem.remove();
+                        });
+
+                        fileList.appendChild(listItem);
+                    } else {
+                        alert(`File "${file.name}" is already added.`);
+                    }
+                });
+
+                // Reset the file input to allow adding the same file again
+                fileInput.value = '';
+            });
+
             $('#burialApplicationForm').on('submit', function (event) {
                 event.preventDefault();
 
-                var formData = new FormData(this);
+                const formData = new FormData(this);
+
+                // Append files to the formData
+                filesData.forEach(file => {
+                    formData.append('AttachmentPath', file);
+                });
 
                 $.ajax({
                     url: '/BurialApplication/Create',
@@ -219,6 +251,8 @@
                             $('#successAlert').removeClass('d-none').text('Burial application submitted successfully!');
                             $('#errorAlert').addClass('d-none');
                             $('#burialApplicationForm')[0].reset();
+                            filesData.length = 0; // Clear file data
+                            fileList.innerHTML = ''; // Clear preview list
                             setTimeout(function () {
                                 window.location.href = '/Client/Dashboard';
                             }, 2000);
@@ -236,13 +270,29 @@
                         }
                     },
                     error: function (xhr, status, error) {
-                        var errorMessage = `Submission error details: Error ${xhr.status}: ${error}\nResponse Text: ${xhr.responseText}`;
+                        const errorMessage = `Submission error details: Error ${xhr.status}: ${error}\nResponse Text: ${xhr.responseText}`;
                         $('#errorAlert').removeClass('d-none').html(errorMessage);
                         $('#successAlert').addClass('d-none');
                         console.error(errorMessage);
                     }
                 });
             });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const currentDate = `${year}-${month}-${day}`;
+
+            // Set the min and default value for the DateOfBurial field
+            const dateOfBurialInput = document.getElementById('DateOfBurial');
+            if (dateOfBurialInput) {
+                dateOfBurialInput.setAttribute('min', currentDate); // Disable previous dates
+                dateOfBurialInput.setAttribute('value', currentDate); // Set current date as default
+            }
         });
 
     </script>

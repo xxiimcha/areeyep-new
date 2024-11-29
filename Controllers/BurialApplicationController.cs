@@ -61,30 +61,61 @@ namespace AreEyeP.Controllers
             return View();
         }
 
-        // POST: /BurialApplication/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(BurialApplication model, IFormFile? Attachment)
+        public async Task<IActionResult> Create([FromForm] BurialApplication model, [FromForm] List<IFormFile>? AttachmentPath)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    if (Attachment != null && Attachment.Length > 0)
+                    // Log debug information
+                    Console.WriteLine("Model received:");
+                    Console.WriteLine($"ApplicationId: {model.ApplicationId}");
+
+                    if (AttachmentPath == null || !AttachmentPath.Any())
                     {
-                        var filePath = Path.Combine("wwwroot/uploads", Attachment.FileName);
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await Attachment.CopyToAsync(stream);
-                        }
-                        model.AttachmentPath = filePath;
+                        Console.WriteLine("No files uploaded.");
+                        return Json(new { success = false, message = "No files were uploaded." });
                     }
 
-                    // Check if ApplicationId was provided from the form field
-                    if (string.IsNullOrWhiteSpace(model.ApplicationId))
+                    // Define the documents directory inside uploads
+                    var uploadDirectory = Path.Combine("wwwroot", "uploads", "documents");
+
+                    // Ensure the directory exists
+                    if (!Directory.Exists(uploadDirectory))
                     {
-                        return Json(new { success = false, message = "Application ID is required." });
+                        Console.WriteLine("Creating directory: " + uploadDirectory);
+                        Directory.CreateDirectory(uploadDirectory);
                     }
+
+                    var savedFilePaths = new List<string>();
+
+                    foreach (var file in AttachmentPath)
+                    {
+                        if (file.Length > 0)
+                        {
+                            // Generate a unique filename to avoid conflicts
+                            var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+                            var filePath = Path.Combine(uploadDirectory, uniqueFileName);
+
+                            Console.WriteLine($"Saving file: {filePath}");
+
+                            // Save the file
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            // Store the relative file path to save in the database
+                            savedFilePaths.Add($"/uploads/documents/{uniqueFileName}");
+                        }
+                    }
+
+                    // Save the file paths as a comma-separated string in the AttachmentPath column
+                    model.AttachmentPath = string.Join(",", savedFilePaths);
+
+                    Console.WriteLine("Files uploaded: " + model.AttachmentPath);
 
                     model.CreatedDate = DateTime.UtcNow;
                     model.Status = "Pending";
@@ -97,6 +128,7 @@ namespace AreEyeP.Controllers
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine("Exception: " + ex.Message);
                     return Json(new { success = false, message = $"An exception occurred: {ex.Message}" });
                 }
             }
@@ -107,8 +139,12 @@ namespace AreEyeP.Controllers
                 .Select(e => e.ErrorMessage)
                 .ToList();
 
+            Console.WriteLine("Validation errors: " + string.Join(", ", validationErrors));
+
             return Json(new { success = false, message = "Validation failed.", errors = validationErrors });
         }
+
+
 
         [HttpGet]
         public async Task<IActionResult> GetDetails(int id)
