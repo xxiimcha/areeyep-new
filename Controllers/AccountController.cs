@@ -22,7 +22,7 @@ namespace AreEyeP.Controllers
             {
                 var adminUser = new User
                 {
-                    Name = "Admin User",
+                    Name = "System Administrator",
                     Email = "admin@example.com",
                     Password = "Admin@123", // Default password (Consider hashing this in production)
                     Role = "admin"

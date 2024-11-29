@@ -84,7 +84,7 @@
                                             <div class="card-body">
                                                 <div class="form-group">
                                                     <label asp-for="DateOfBurial" class="form-label">Date of Burial</label>
-                                                    <input asp-for="DateOfBurial" class="form-control" value="2024-10-05" required />
+                                                    <input asp-for="DateOfBurial" class="form-control" id="DateOfBurial" required />
                                                     <span asp-validation-for="DateOfBurial" class="text-danger"></span>
                                                 </div>
                                                 <div class="form-group mt-3">
@@ -154,10 +154,13 @@
                                                     <input asp-for="Religion" class="form-control" value="Roman Catholic" readonly />
                                                 </div>
                                                 <div class="form-group mt-3">
-                                                    <label asp-for="AttachmentPath" class="form-label">Attach Requirement (Death certificate, ID of the Applicant)</label>
-                                                    <input class="form-control-file" type="file" id="Attachment" name="AttachmentPath" />
+                                                    <label asp-for="AttachmentPath" class="form-label">Attach Requirement <small>(Death certificate, ID of the Applicant)</small></label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-secondary text-white"><i class="fas fa-paperclip"></i></span>
+                                                        <input class="form-control" type="file" id="Attachment" name="AttachmentPath" accept=".pdf,.jpg,.jpeg,.png" required />
+                                                    </div>
+                                                    <small class="text-muted">Accepted file types: PDF, JPG, PNG. Maximum file size: 5MB.</small>
                                                 </div>
-
                                             </div>
                                         </div>
                                     </div>
@@ -180,6 +183,22 @@
     @Html.Partial("_ScriptLinks")
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const currentDate = `${year}-${month}-${day}`;
+
+            // Set the min and default value for the DateOfBurial field
+            const dateOfBurialInput = document.getElementById('DateOfBurial');
+            if (dateOfBurialInput) {
+                dateOfBurialInput.setAttribute('min', currentDate); // Disable previous dates
+                dateOfBurialInput.setAttribute('value', currentDate); // Set current date as default
+            }
+        });
+
         $(document).ready(function () {
             $('#burialApplicationForm').on('submit', function (event) {
                 event.preventDefault();
