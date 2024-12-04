@@ -49,7 +49,22 @@ namespace AreEyeP.Controllers
                 _context.ServiceRequests.Add(serviceRequest);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "Service request created successfully!" });
+                // Notify staff about the new service request
+                var staffNotification = new Notification
+                {
+                    Message = $"A new service request (ID: {serviceRequest.Id}) has been created and is awaiting assignment.",
+                    TargetUser = "staff",
+                    UserId = null, // No specific user ID for staff notification
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    NotificationType = "info",
+                    Type = "Service Request"
+                };
+
+                _context.Notifications.Add(staffNotification);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Service request created successfully and staff notified!" });
             }
 
             // Log ModelState errors for debugging
@@ -77,6 +92,19 @@ namespace AreEyeP.Controllers
             serviceRequest.UpdatedAt = DateTime.UtcNow;
             serviceRequest.PaymentRequired = isPaymentRequired; // Assign the boolean value directly
 
+            // Insert a notification for the client about the assigned staff
+            var clientNotification = new Notification
+            {
+                Message = $"Staff {staffName} has been assigned to your service request (ID: {serviceRequestId}).",
+                TargetUser = "client",
+                UserId = serviceRequest.UserId, // Attach the client user ID
+                CreatedAt = DateTime.UtcNow,
+                IsRead = false,
+                NotificationType = "info",
+                Type = "Service Request"
+            };
+            _context.Notifications.Add(clientNotification);
+
             // If payment is required, create a new payment entry
             if (isPaymentRequired && amountToBePaid.HasValue)
             {
@@ -94,12 +122,26 @@ namespace AreEyeP.Controllers
                 };
 
                 _context.ClientPayments.Add(payment);
+
+                // Insert a notification for the client about the payment
+                var paymentNotification = new Notification
+                {
+                    Message = $"Your service request requires a payment of {amountToBePaid.Value:C}. Please proceed with the payment.",
+                    TargetUser = "client",
+                    UserId = serviceRequest.UserId, // Attach the client user ID
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    NotificationType = "info",
+                    Type = "Payment"
+                };
+                _context.Notifications.Add(paymentNotification);
             }
 
             // Save the changes to the database
             await _context.SaveChangesAsync();
 
-            return Json(new { success = true, message = "Staff assigned and payment details saved successfully." });
+            return Json(new { success = true, message = "Staff assigned and client notified. Payment details saved successfully." });
         }
+
     }
 }

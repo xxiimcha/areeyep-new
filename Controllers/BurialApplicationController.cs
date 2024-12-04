@@ -124,6 +124,20 @@ namespace AreEyeP.Controllers
                     _context.BurialApplications.Add(model);
                     await _context.SaveChangesAsync();
 
+                    // Insert a notification for the LGU
+                    var notification = new Notification
+                    {
+                        Message = "A new burial application is waiting for approval.",
+                        TargetUser = "lgu",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false,
+                        NotificationType = "info",
+                        Type = "Application"
+                    };
+
+                    _context.Notifications.Add(notification);
+                    await _context.SaveChangesAsync();
+
                     return Json(new { success = true, message = $"Application submitted successfully with ID: {model.ApplicationId}" });
                 }
                 catch (Exception ex)

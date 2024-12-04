@@ -19,6 +19,7 @@ namespace AreEyeP.Data
         public DbSet<ActivityLog> ActivityLog { get; set; }
         public DbSet<Renewal> Renewal { get; set; }
         public DbSet<Deceased> Deceased { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

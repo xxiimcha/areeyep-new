@@ -1,0 +1,37 @@
+
+            <html>
+            <head>
+                <title>Receipt</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .title { font-size: 20px; font-weight: bold; }
+                    .details { margin-top: 20px; }
+                    .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="title">Receipt</div>
+                <p>Invoice #: 000000003</p>
+                <p>Created: December 03, 2024</p>
+                <p>Due: December 08, 2024</p>
+
+                <div class="details">
+                    <p><strong>Ordered By:</strong> Charmaine Cator</p>
+                    <p>Email: charmaine.l.d.cator@gmail.com</p>
+                </div>
+
+                <div class="details">
+                    <p><strong>Payment Method:</strong> Cash/Gcash/Paymaya/Bank Transfer</p>
+                </div>
+
+                <div class="details">
+                    <p><strong>Item:</strong> Casual Button-Up Shirt</p>
+                    <p><strong>Price:</strong> P154</p>
+                </div>
+
+                <div class="total">
+                    Total Amount: P154
+                </div>
+            </body>
+            </html>
+        

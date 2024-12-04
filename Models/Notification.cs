@@ -24,5 +24,9 @@ namespace AreEyeP.Models
 
         [MaxLength(100)]
         public string NotificationType { get; set; } // Optional: Categorize notifications (e.g., "info", "warning", "error")
+
+        [Required]
+        [MaxLength(50, ErrorMessage = "Type cannot exceed 50 characters.")]
+        public string Type { get; set; } // To categorize notifications (e.g., "Application", "Service Requests", etc.)
     }
 }
