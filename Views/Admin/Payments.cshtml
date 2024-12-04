@@ -75,8 +75,9 @@
                     </div>
 
                     <!-- Add Payment Modal -->
+                    <!-- Add Payment Modal -->
                     <div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="addPaymentModalLabel">Upload Payment Details</h5>
@@ -84,43 +85,51 @@
                                 </div>
                                 <div class="modal-body">
                                     <form id="addPaymentForm" enctype="multipart/form-data">
-                                        <div class="mb-3">
-                                            <label for="modeOfPayment" class="form-label">Mode of Payment</label>
-                                            <select class="form-select" id="modeOfPayment" name="PaymentMode" required onchange="togglePaymentFields()">
-                                                <option value="" disabled selected>Select Mode of Payment</option>
-                                                <option value="ewallet">eWallet</option>
-                                                <option value="bank">Bank Transfer</option>
-                                            </select>
+                                        <div class="row">
+                                            <!-- Payment Mode -->
+                                            <div class="col-12 mb-3">
+                                                <label for="modeOfPayment" class="form-label">Mode of Payment</label>
+                                                <select class="form-select" id="modeOfPayment" name="PaymentMode" required onchange="togglePaymentFields()">
+                                                    <option value="" disabled selected>Select Mode of Payment</option>
+                                                    <option value="ewallet">eWallet</option>
+                                                    <option value="bank">Bank Transfer</option>
+                                                </select>
+                                            </div>
                                         </div>
 
-                                        <!-- eWallet Fields -->
-                                        <div id="ewalletFields" style="display:none;">
-                                            <div class="mb-3">
+                                        <!-- eWallet Section -->
+                                        <div id="ewalletFields" class="row" style="display:none;">
+                                            <div class="col-md-6 mb-3">
                                                 <label for="ewalletProvider" class="form-label">eWallet Provider</label>
-                                                <input type="text" class="form-control" id="ewalletProvider" name="eWalletProvider" placeholder="Enter eWallet Provider (e.g., GCash)" />
+                                                <input type="text" class="form-control" id="ewalletProvider" name="BankName" placeholder="Enter eWallet Provider (e.g., GCash)" />
                                             </div>
-                                            <div class="mb-3">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="gcashNumber" class="form-label">eWallet Number</label>
+                                                <input type="text" class="form-control" id="gcashNumber" name="AccountNumber" placeholder="Enter eWallet Number" />
+                                            </div>
+                                            <div class="col-md-12 mb-3">
                                                 <label for="qrCode" class="form-label">Upload QR Code</label>
                                                 <input type="file" class="form-control" id="qrCode" name="QrCode" />
                                             </div>
                                         </div>
 
-                                        <!-- Bank Transfer Fields -->
-                                        <div id="bankFields" style="display:none;">
-                                            <div class="mb-3">
+                                        <!-- Bank Transfer Section -->
+                                        <div id="bankFields" class="row" style="display:none;">
+                                            <div class="col-md-6 mb-3">
                                                 <label for="bankName" class="form-label">Bank Name</label>
                                                 <input type="text" class="form-control" id="bankName" name="BankName" placeholder="Enter Bank Name" />
                                             </div>
-                                            <div class="mb-3">
+                                            <div class="col-md-6 mb-3">
                                                 <label for="accountNumber" class="form-label">Account Number</label>
                                                 <input type="text" class="form-control" id="accountNumber" name="AccountNumber" placeholder="Enter Account Number" />
                                             </div>
-                                            <div class="mb-3">
+                                            <div class="col-md-12 mb-3">
                                                 <label for="bankBranch" class="form-label">Bank Branch</label>
                                                 <input type="text" class="form-control" id="bankBranch" name="BankBranch" placeholder="Enter Bank Branch" />
                                             </div>
                                         </div>
 
+                                        <!-- Modal Footer -->
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             <button type="button" class="btn btn-primary" onclick="addPayment()">Upload Payment</button>
@@ -130,6 +139,8 @@
                             </div>
                         </div>
                     </div>
+
+
                 </div>
             </main>
         </div>
@@ -158,63 +169,40 @@
         }
 
         function addPayment() {
-            const formData = new FormData(document.getElementById('addPaymentForm'));
+            const form = document.getElementById("addPaymentForm");
+            const formData = new FormData(form);
 
             fetch('/Payment/AddPayment', {
                 method: 'POST',
                 body: formData
             })
-                .then(async response => {
+                .then(async (response) => {
+                    // Check if the response is JSON
                     const contentType = response.headers.get("content-type");
-
-                    // Check if response is JSON
                     if (contentType && contentType.includes("application/json")) {
                         return response.json();
                     } else {
-                        // If not JSON, attempt to extract text for logging
-                        const text = await response.text();
-                        console.error('Response was not JSON:', text);
-                        toastr.error('Unexpected response format. Check console for details.');
-                        throw new Error('Unexpected response format');
+                        const text = await response.text(); // Capture non-JSON response
+                        console.error('Unexpected response:', text);
+                        throw new Error('Unexpected response from the server.');
                     }
                 })
-                .then(result => {
+                .then((result) => {
                     if (result.success) {
                         toastr.success(result.message);
                         const modal = bootstrap.Modal.getInstance(document.getElementById('addPaymentModal'));
                         modal.hide();
-                        location.reload(); // Reload the page to show the updated payment list
+                        location.reload();
                     } else {
+                        toastr.error(result.message || 'An error occurred while uploading payment details.');
                         if (result.errors && result.errors.length > 0) {
-                            result.errors.forEach(error => toastr.error(error)); // Display individual errors
-                        } else {
-                            toastr.error(result.message || 'An error occurred while processing the request.');
+                            result.errors.forEach((error) => toastr.error(error));
                         }
                     }
                 })
-                .catch(error => toastr.error('Error: ' + error));
+                .catch((error) => toastr.error('Error: ' + error));
         }
 
-        function deletePayment(id) {
-            if (confirm("Are you sure you want to delete this payment?")) {
-                fetch(`/Payment/Delete/${id}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.success) {
-                            toastr.success(result.message);
-                            location.reload();
-                        } else {
-                            toastr.error(result.message);
-                        }
-                    })
-                    .catch(error => toastr.error('Error: ' + error));
-            }
-        }
     </script>
 </body>
 </html>
