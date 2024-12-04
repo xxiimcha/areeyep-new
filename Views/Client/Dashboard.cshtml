@@ -11,63 +11,19 @@
 
     <!-- Include the CSS Links Partial -->
     @Html.Partial("_CSSLinks")
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
     <style>
-        /* Make the body and html fill the entire viewport */
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
         }
 
-        /* Fullscreen map */
         #leafletMap {
             width: 100%;
-            height: 100vh; /* 100% of the viewport height */
-        }
-
-        /* Optional: Ensure main content takes the full height */
-        #layoutSidenav_content {
-            height: 100%;
-        }
-
-        /* Sidebar styles */
-        .sidebar {
-            position: fixed;
-            right: 0;
-            top: 100px;
-            width: 450px;
-            height: 800px;
-            background-color: #f8f9fa;
-            border-left: 1px solid #ddd;
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-            display: none;
-            z-index: 1000;
-        }
-
-        .sidebar-header {
-            background-color: #097969;
-            color: #fff;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sidebar-content {
-            padding: 15px;
-        }
-
-            .sidebar-content input {
-                width: 100%;
-                padding: 5px;
-                margin-bottom: 10px;
-            }
-
-        .close-btn {
-            cursor: pointer;
-            font-size: 1.2rem;
+            height: 100vh;
         }
     </style>
 </head>
@@ -81,42 +37,47 @@
 
         <div id="layoutSidenav_content">
             <main>
-                <!-- Fullscreen map -->
                 <div id="leafletMap"></div>
             </main>
         </div>
     </div>
 
-    <!-- Sidebar for Catacomb Details -->
-    <div class="sidebar" id="catacombSidebar">
-        <div class="sidebar-header">
-            <h5>Deceased Information/Located</h5>
-            <span class="close-btn" onclick="closeSidebar()">×</span>
-        </div>
-        <div class="sidebar-content">
-            <div>
-                <img src="https://via.placeholder.com/150" alt="Image" style="width: 100%; height: auto; margin-bottom: 15px;">
-            </div>
-            <div>
-                <label>Name:</label>
-                <input type="text" id="name" readonly>
-                <label>ID:</label>
-                <input type="text" id="id" readonly>
-                <label>Catacomb ID:</label>
-                <input type="text" id="catacombId" readonly>
-                <label>Catacomb number:</label>
-                <input type="text" id="catacombNumber" readonly>
-                <label>Block number:</label>
-                <input type="text" id="blockNumber" readonly>
-                <label>Street number:</label>
-                <input type="text" id="streetNumber" readonly>
-                <label>Location Catacomb:</label>
-                <input type="text" id="locationCatacomb" readonly>
+    <!-- Modal for Catacomb Details -->
+    <div class="modal fade" id="catacombModal" tabindex="-1" aria-labelledby="catacombModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <!-- Updated modal size -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="catacombModalLabel">Deceased Information/Located</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <label>Name:</label>
+                        <input type="text" id="modalName" class="form-control" readonly>
+                        <label>ID:</label>
+                        <input type="text" id="modalId" class="form-control" readonly>
+                        <label>Catacomb ID:</label>
+                        <input type="text" id="modalCatacombId" class="form-control" readonly>
+                        <label>Catacomb number:</label>
+                        <input type="text" id="modalCatacombNumber" class="form-control" readonly>
+                        <label>Block number:</label>
+                        <input type="text" id="modalBlockNumber" class="form-control" readonly>
+                        <label>Street number:</label>
+                        <input type="text" id="modalStreetNumber" class="form-control" readonly>
+                        <label>Location Catacomb:</label>
+                        <input type="text" id="modalLocationCatacomb" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
 
     @Html.Partial("_ScriptLinks")
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -143,37 +104,29 @@
 
             // Initialize the Leaflet map
             const map = L.map('leafletMap', {
-                center: [10.302297, 123.956832], // Initial center
-                zoom: 17,                        // Initial zoom level
-                minZoom: 15,                     // Prevent zooming out too far
-                maxZoom: 20                      // Allow very close zoom
+                center: [10.302297, 123.956832],
+                zoom: 17,
+                minZoom: 15,
+                maxZoom: 20
             });
 
-            console.log('Map initialized');
-
             // Define max bounds for the map
-            const southWest = L.latLng(10.311161, 123.953602); // Southwest boundary
-            const northEast = L.latLng(10.293434, 123.960062); // Northeast boundary
+            const southWest = L.latLng(10.311161, 123.953602);
+            const northEast = L.latLng(10.293434, 123.960062);
             const bounds = L.latLngBounds(southWest, northEast);
 
-            // Apply max bounds to the map
             map.setMaxBounds(bounds);
             map.on('drag', function () {
                 map.panInsideBounds(bounds, { animate: true });
             });
 
-            console.log('Max bounds applied:', bounds);
-
             // Add OpenStreetMap tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
-            console.log('Tile layer added to the map');
 
             // Add a search bar to the map
-            const geocoder = L.Control.geocoder({
-                defaultMarkGeocode: false
-            }).addTo(map);
+            const geocoder = L.Control.geocoder({ defaultMarkGeocode: false }).addTo(map);
 
             geocoder.on('markgeocode', function (e) {
                 const bbox = e.geocode.bbox;
@@ -187,38 +140,22 @@
             });
 
             // Fetch catacomb locations from the server
-            console.log('Fetching catacomb locations...');
             fetch('/Catacomb/GetLocations')
                 .then(response => {
-                    console.log('Response received from server', response);
-                    if (!response.ok) {
-                        console.error('Network response was not ok:', response.statusText);
-                        throw new Error('Network response was not ok');
-                    }
+                    if (!response.ok) throw new Error('Network response was not ok');
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Data parsed:', data);
                     if (data.success && data.locations) {
-                        console.log('Locations found:', data.locations);
                         data.locations.forEach(catacomb => {
-                            const catacombName = catacomb.CatacombName;
-                            const availabilityStatus = catacomb.AvailabilityStatus;
-                            const latitude = catacomb.latitude;
-                            const longitude = catacomb.longitude;
+                            const icon = (catacomb.AvailabilityStatus === 'Available') ? greenIcon : redIcon;
 
-                            const icon = (availabilityStatus === 'Available') ? greenIcon : redIcon;
-
-                            if (latitude && longitude) {
-                                console.log('Adding marker for:', catacombName, latitude, longitude, 'Status:', availabilityStatus);
-                                const marker = L.marker([latitude, longitude], { icon: icon })
-                                    .addTo(map)
+                            if (catacomb.latitude && catacomb.longitude) {
+                                const marker = L.marker([catacomb.latitude, catacomb.longitude], { icon: icon }).addTo(map);
 
                                 marker.on('click', function () {
-                                    openSidebar(catacomb);
+                                    showModal(catacomb);
                                 });
-                            } else {
-                                console.error('Invalid latitude or longitude for:', catacombName);
                             }
                         });
                     } else {
@@ -230,22 +167,18 @@
                 });
         });
 
-        function openSidebar(catacomb) {
-            document.getElementById('name').value = catacomb.CatacombName;
-            document.getElementById('id').value = catacomb.ID;
-            document.getElementById('catacombId').value = catacomb.CatacombID;
-            document.getElementById('catacombNumber').value = catacomb.CatacombName;
-            document.getElementById('blockNumber').value = catacomb.CatacombName;
-            document.getElementById('streetNumber').value = catacomb.CatacombName;
-            document.getElementById('locationCatacomb').value = catacomb.Location;
+        function showModal(catacomb) {
+            document.getElementById('modalName').value = catacomb.CatacombName;
+            document.getElementById('modalId').value = catacomb.ID;
+            document.getElementById('modalCatacombId').value = catacomb.CatacombID;
+            document.getElementById('modalCatacombNumber').value = catacomb.CatacombName;
+            document.getElementById('modalBlockNumber').value = catacomb.CatacombName;
+            document.getElementById('modalStreetNumber').value = catacomb.CatacombName;
+            document.getElementById('modalLocationCatacomb').value = catacomb.Location;
 
-            document.getElementById('catacombSidebar').style.display = 'block';
+            const modal = new bootstrap.Modal(document.getElementById('catacombModal'));
+            modal.show();
         }
-
-        function closeSidebar() {
-            document.getElementById('catacombSidebar').style.display = 'none';
-        }
-
     </script>
 </body>
 </html>

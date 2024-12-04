@@ -55,8 +55,9 @@
                                             <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th>#</th>
-                                                    <th>First Name</th>
-                                                    <th>Last Name</th>
+                                                    <th>Application ID</th> <!-- Add Application ID Column -->
+                                                    <th>Applicant Name</th> <!-- Combine First Name and Last Name -->
+                                                    <th>Deceased Name</th> <!-- Combine First Name and Last Name -->
                                                     <th>Date of Death</th>
                                                     <th>Date of Burial</th>
                                                     <th>Actions</th>
@@ -69,8 +70,9 @@
                                                     {
                                                         <tr>
                                                             <td>@i</td>
-                                                            <td>@application.FirstName</td>
-                                                            <td>@application.LastName</td>
+                                                            <td>@application.ApplicationId</td> <!-- Application ID -->
+                                                            <td>@application.FirstName @application.LastName</td> <!-- Combined First and Last Name -->
+                                                            <td>@application.DeceasedFirstName @application.DeceasedLastName</td> <!-- Combined First and Last Name -->
                                                             <td>@application.DateOfDeath.ToShortDateString()</td>
                                                             <td>@application.DateOfBurial.ToShortDateString()</td>
                                                             <td>
@@ -81,6 +83,7 @@
                                                     }
                                                 }
                                             </tbody>
+
                                         </table>
                                     </div>
                                 }
@@ -104,6 +107,7 @@
                     <h5 class="modal-title" id="applicationModalLabel">Burial Application Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+
                 <div class="modal-body">
                     <div class="container-fluid">
                         <h6 class="text-primary">Deceased Information</h6>
@@ -141,26 +145,22 @@
                                 <p id="specialInstructions"></p>
                             </div>
                         </div>
-                        <div id="paymentInfoSection" style="display: none;">
                         <hr />
-                            <h6 class="text-primary mt-4">Payment Information</h6>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label><strong>Amount Paid:</strong></label>
-                                    <p id="amountPaid"></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label><strong>Payment Status:</strong></label>
-                                    <p id="paymentStatus"></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label><strong>Payment Date:</strong></label>
-                                    <p id="paymentDate"></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label><strong>Reference Number:</strong></label>
-                                    <p id="referenceNumber"></p>
-                                </div>
+                        <h6 class="text-primary mt-4">Attachments</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>File Name</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="attachmentsList">
+                                        <!-- Attachments will be dynamically injected here -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -229,14 +229,34 @@
                         const application = data.application;
 
                         // Fill in modal fields with the correct data from the response
-                        document.getElementById("deceasedFirstName").textContent = application.firstName;
-                        document.getElementById("deceasedLastName").textContent = application.lastName;
+                        document.getElementById("deceasedFirstName").textContent = application.deceasedFirstName;
+                        document.getElementById("deceasedLastName").textContent = application.deceasedLastName;
                         document.getElementById("address").textContent = application.address;
                         document.getElementById("causeOfDeath").textContent = application.causeOfDeath;
                         document.getElementById("dateOfDeath").textContent = application.dateOfDeath;
                         document.getElementById("dateOfBurial").textContent = application.dateOfBurial;
                         document.getElementById("religion").textContent = application.religion;
                         document.getElementById("specialInstructions").textContent = application.specialInstructions;
+
+                        // Handle attachments
+                        const attachmentsList = document.getElementById("attachmentsList");
+                        attachmentsList.innerHTML = ""; // Clear previous attachments
+
+                        if (application.attachmentPath) {
+                            const attachments = application.attachmentPath.split(","); // Split by commas
+                            attachments.forEach((file, index) => {
+                                const fileName = file.substring(file.lastIndexOf("/") + 1); // Extract file name
+                                const row = `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${fileName}</td>
+                                        <td><a href="${file}" target="_blank" class="btn btn-primary btn-sm">View</a></td>
+                                    </tr>`;
+                                attachmentsList.insertAdjacentHTML("beforeend", row);
+                            });
+                        } else {
+                            attachmentsList.insertAdjacentHTML("beforeend", `<tr><td colspan="3" class="text-center">No attachments found</td></tr>`);
+                        }
 
                         // Store the application ID and status in the modal for use when approving/declining/confirming
                         $('#applicationModal').data('applicationId', id);

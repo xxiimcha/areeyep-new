@@ -101,6 +101,7 @@ namespace AreEyeP.Controllers
                                           a.Religion,
                                           a.Address,
                                           a.Status,
+                                          a.AttachmentPath,
                                           Payment = _context.ClientPayments
                                               .Where(p => p.ApplicationId == a.Id)
                                               .OrderByDescending(p => p.PaymentDate) // Get the latest payment
@@ -174,8 +175,8 @@ namespace AreEyeP.Controllers
                 // Insert deceased information into Deceased table
                 var deceased = new Deceased
                 {
-                    FirstName = application.FirstName,
-                    LastName = application.LastName,
+                    FirstName = application.DeceasedFirstName,
+                    LastName = application.DeceasedLastName,
                     DateOfBirth = application.DateOfBirth,
                     DateOfDeath = application.DateOfDeath,
                     Address = application.Address,
