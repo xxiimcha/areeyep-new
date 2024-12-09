@@ -79,153 +79,113 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM fully loaded and parsed');
+            const map = L.map('leafletMap', {
+                center: [10.302297, 123.956832],
+                zoom: 17,
+                minZoom: 15,
+                maxZoom: 20
+            });
 
-    // Define custom green and red marker icons
-    const greenIcon = L.icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-    });
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
 
-    const redIcon = L.icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-    });
-
-    // Initialize the Leaflet map
-    const map = L.map('leafletMap', {
-        center: [10.302297, 123.956832],
-        zoom: 17,
-        minZoom: 15,
-        maxZoom: 20
-    });
-
-    // Define max bounds for the map
-    const southWest = L.latLng(10.311161, 123.953602);
-    const northEast = L.latLng(10.293434, 123.960062);
-    const bounds = L.latLngBounds(southWest, northEast);
-
-    map.setMaxBounds(bounds);
-    map.on('drag', function () {
-        map.panInsideBounds(bounds, { animate: true });
-    });
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Add a search bar to the map
-    const geocoder = L.Control.geocoder({ defaultMarkGeocode: false }).addTo(map);
-
-    geocoder.on('markgeocode', function (e) {
-        const bbox = e.geocode.bbox;
-        const poly = L.polygon([
-            bbox.getSouthEast(),
-            bbox.getNorthEast(),
-            bbox.getNorthWest(),
-            bbox.getSouthWest()
-        ]).addTo(map);
-        map.fitBounds(poly.getBounds());
-    });
-
-    // Fetch catacomb locations from the server
-    fetch('/Catacomb/GetLocations')
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(data => {
-            if (data.success && data.locations) {
-                console.log('Fetched locations:', data.locations);
-
-                data.locations.forEach(catacomb => {
-                    // Use green for Available and red for Occupied
-                    const fillColor = catacomb.availabilityStatus === 'Available' ? 'green' : 'red';
-
+            // Function to draw catacombs based on coordinates
+            function drawCatacombs(map, locations) {
+                locations.forEach(catacomb => {
                     if (catacomb.latitude && catacomb.longitude) {
                         const lat = catacomb.latitude;
                         const lng = catacomb.longitude;
 
-                        // Define tombstone-like shape
+                        // Define the "tombstone" shape
                         const tombCoords = [
-                            [lat - 0.00009, lng - 0.00007], // Bottom-left
-                            [lat - 0.00009, lng + 0.00007], // Bottom-right
-                            [lat, lng + 0.00004], // Rounded top-right
-                            [lat + 0.00003, lng], // Top-center
-                            [lat, lng - 0.00004], // Rounded top-left
-                            [lat - 0.00009, lng - 0.00007] // Back to Bottom-left
+                            [lat - 0.00006, lng - 0.00008], // Bottom-left
+                            [lat - 0.00006, lng + 0.00008], // Bottom-right
+                            [lat, lng], // Top-center
+                            [lat - 0.00006, lng - 0.00008] // Back to Bottom-left
                         ];
 
-                        // Create a polygon representing the tombstone
+                        // Color coding based on availability status
+                        const fillColor = catacomb.availabilityStatus === 'Available' ? 'green' : 'red';
+
+                        // Draw the tombstone
                         const tombstone = L.polygon(tombCoords, {
-                            color: fillColor,
+                            color: 'black',
                             fillColor: fillColor,
-                            fillOpacity: 0.8,
-                            weight: 2
+                            fillOpacity: 0.7,
+                            weight: 1
                         }).addTo(map);
 
-                        // Add a tooltip with catacomb details
+                        // Add a tooltip for the catacomb
                         tombstone.bindTooltip(
-                            `<strong>${catacomb.catacombName || 'Unknown'}</strong><br>Availability: ${catacomb.availabilityStatus || 'Unknown'}`,
+                            `<strong>${catacomb.catacombName || 'Unknown'}</strong><br>Status: ${catacomb.availabilityStatus || 'Unknown'}`,
                             { permanent: false, direction: 'top' }
                         );
 
-                        // Add click event to show modal with catacomb details
+                        // Add a click event to show detailed information
                         tombstone.on('click', function () {
                             showModal(catacomb);
                         });
                     }
                 });
-
-                // Add section markers or labels
-                addSectionLabels(map);
-            } else {
-                console.error('Error fetching locations:', data.message);
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
 
-    // Function to add section labels
-    function addSectionLabels(map) {
-        const sections = [
-            { name: 'Section A', lat: 10.304, lng: 123.957 },
-            { name: 'Section B', lat: 10.302, lng: 123.956 }
-        ];
+            // Function to add decorative elements like pathways and trees
+            function addDecorations(map) {
+                // Example pathways
+                const pathways = [
+                    [[10.303, 123.954], [10.303, 123.957]],
+                    [[10.302, 123.954], [10.302, 123.957]],
+                    [[10.304, 123.955], [10.301, 123.955]]
+                ];
+                pathways.forEach(path => {
+                    L.polyline(path, { color: 'gray', weight: 2, dashArray: '5, 10' }).addTo(map);
+                });
 
-        sections.forEach(section => {
-            L.marker([section.lat, section.lng], {
-                icon: L.divIcon({
-                    className: 'section-label',
-                    html: `<div style="font-size:16px; font-weight:bold; color:darkgreen;">${section.name}</div>`
+                // Example trees
+                const trees = [
+                    { lat: 10.3035, lng: 123.955, name: 'Tree 1' },
+                    { lat: 10.3025, lng: 123.956, name: 'Tree 2' },
+                    { lat: 10.303, lng: 123.957, name: 'Tree 3' }
+                ];
+                trees.forEach(tree => {
+                    L.circle([tree.lat, tree.lng], {
+                        color: 'green',
+                        fillColor: 'green',
+                        fillOpacity: 0.5,
+                        radius: 5
+                    }).bindTooltip(tree.name).addTo(map);
+                });
+            }
+
+            // Fetch catacomb locations and draw on the map
+            fetch('/Catacomb/GetLocations')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.locations) {
+                        console.log('Fetched locations:', data.locations);
+                        drawCatacombs(map, data.locations);
+                        addDecorations(map); // Add pathways, trees, etc.
+                    } else {
+                        console.error('Error fetching locations:', data.message);
+                    }
                 })
-            }).addTo(map);
+                .catch(error => console.error('Error:', error));
+
+            // Show modal with catacomb details
+            function showModal(catacomb) {
+                document.getElementById('modalName').value = catacomb.catacombName || 'N/A';
+                document.getElementById('modalCatacombId').value = catacomb.catacombID || 'N/A';
+                document.getElementById('modalCatacombNumber').value = catacomb.catacombNumber || 'N/A';
+                document.getElementById('modalBlockNumber').value = catacomb.blockNumber || 'N/A';
+                document.getElementById('modalStreetNumber').value = catacomb.streetNumber || 'N/A';
+                document.getElementById('modalLocationCatacomb').value = `${catacomb.latitude}, ${catacomb.longitude}` || 'N/A';
+
+                const modal = new bootstrap.Modal(document.getElementById('catacombModal'));
+                modal.show();
+            }
         });
-    }
-
-    // Show modal with details
-    function showModal(catacomb) {
-        document.getElementById('modalName').value = catacomb.catacombName || 'N/A';
-        document.getElementById('modalCatacombId').value = catacomb.catacombID || 'N/A';
-        document.getElementById('modalCatacombNumber').value = catacomb.catacombNumber || 'N/A';
-        document.getElementById('modalBlockNumber').value = catacomb.blockNumber || 'N/A';
-        document.getElementById('modalStreetNumber').value = catacomb.streetNumber || 'N/A';
-        document.getElementById('modalLocationCatacomb').value = `${catacomb.latitude}, ${catacomb.longitude}` || 'N/A';
-
-        const modal = new bootstrap.Modal(document.getElementById('catacombModal'));
-        modal.show();
-    }
-});
 
     </script>
 </body>

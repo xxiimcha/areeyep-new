@@ -1,0 +1,135 @@
+﻿@{
+    Layout = null; // Not using a shared layout file
+    ViewData["Title"] = "LGU Reports";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Include the CSS Links Partial -->
+    @Html.Partial("_CSSLinks")
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="sb-nav-fixed">
+    <!-- Header Section -->
+    @Html.Partial("_Header")
+
+    <div id="layoutSidenav">
+        <!-- Render the Sidebar Partial -->
+        @Html.Partial("_Sidebar")
+
+        <!-- Main Content Area -->
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">LGU Reports</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item active">Reports</li>
+                    </ol>
+
+                    <!-- Dashboard Content -->
+                    <div class="row">
+                        <!-- Application Status Chart -->
+                        <div class="col-xl-6 col-md-12">
+                            <div class="card bg-light mb-4">
+                                <div class="card-header">Application Status Overview</div>
+                                <div class="card-body">
+                                    <canvas id="applicationStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payments Data Chart -->
+                        <div class="col-xl-6 col-md-12">
+                            <div class="card bg-light mb-4">
+                                <div class="card-header">Monthly Payments Summary</div>
+                                <div class="card-body">
+                                    <canvas id="paymentsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Analytics Section -->
+                    <div class="row">
+                        <div class="col-xl-4 col-md-6">
+                            <div class="card bg-success text-white mb-4">
+                                <div class="card-body">Total Approved Applications</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <span>500</span>
+                                    <div class="small text-white"><i class="fas fa-check-circle"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-6">
+                            <div class="card bg-warning text-white mb-4">
+                                <div class="card-body">Total Pending Applications</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <span>200</span>
+                                    <div class="small text-white"><i class="fas fa-hourglass-half"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-6">
+                            <div class="card bg-danger text-white mb-4">
+                                <div class="card-body">Total Rejected Applications</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <span>50</span>
+                                    <div class="small text-white"><i class="fas fa-times-circle"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Include the Script Links Partial -->
+        @Html.Partial("_ScriptLinks")
+
+        <script>
+            // Data for Application Statuses Chart
+            const applicationStatusData = {
+                labels: ['Approved', 'Pending', 'Rejected'], // Static labels for simplicity
+                datasets: [{
+                    label: 'Applications',
+                    data: [500, 200, 50], // Static data for simplicity
+                    backgroundColor: ['#4CAF50', '#FFC107', '#F44336'], // Colors for Approved, Pending, Rejected
+                }]
+            };
+
+            // Application Status Chart
+            new Chart(document.getElementById('applicationStatusChart'), {
+                type: 'pie',
+                data: applicationStatusData
+            });
+
+            // Data for Payments Chart
+            const paymentsData = {
+                labels: ['January', 'February', 'March', 'April'], // Example months
+                datasets: [{
+                    label: 'Total Payments',
+                    data: [10000, 15000, 12000, 17000], // Static payment data for simplicity
+                    backgroundColor: '#3E95CD'
+                }]
+            };
+
+            // Payments Chart
+            new Chart(document.getElementById('paymentsChart'), {
+                type: 'bar',
+                data: paymentsData,
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        </script>
+</body>
+</html>
