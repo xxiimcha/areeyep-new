@@ -1,27 +1,57 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using AreEyeP.Data; // Adjust based on your project structure
+using System.Linq;
+using System.Threading.Tasks;
+using AreEyeP.Models;
 
 namespace AreEyeP.Controllers
 {
     public class NotificationsController : Controller
     {
+        private readonly ApplicationDbContext _context;
+
+        public NotificationsController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
         // GET: Notifications
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Notifications()
         {
-            // Static list of notifications as an example
-            var notifications = new List<string>
+            // Fetch logged-in user's ID and role
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var userRole = HttpContext.Session.GetString("UserRole"); // Assuming role is stored in the session
+
+            if (userId == null || string.IsNullOrEmpty(userRole))
             {
-                "Payment deadline approaching for burial plot maintenance.",
-                "New burial plot available in Section C.",
-                "Cemetery maintenance scheduled from Nov 18-20, 2024.",
-                "Reminder: Update your documents by the end of the year.",
-                "Office closure on Nov 11 for Veterans Day.",
-                "Policy update: Check new guidelines on decorations."
-            };
+                return Unauthorized("User is not logged in.");
+            }
+
+            // Fetch notifications based on the role
+            IQueryable<Notification> notificationsQuery;
+
+            if (userRole.ToLower() == "client")
+            {
+                // Select notifications targeted to the logged-in client
+                notificationsQuery = _context.Notifications
+                    .Where(n => n.UserId == userId || n.TargetUser == "client")
+                    .OrderByDescending(n => n.CreatedAt);
+            }
+            else
+            {
+                // Select notifications targeted for the logged-in user's role
+                notificationsQuery = _context.Notifications
+                    .Where(n => n.TargetUser == userRole.ToLower() || n.TargetUser == null)
+                    .OrderByDescending(n => n.CreatedAt);
+            }
+
+            // Execute the query and fetch results
+            var notifications = await notificationsQuery.ToListAsync();
 
             // Pass the notifications to the view
-            return View("/Views/Shared/Notifications.cshtml", notifications);
+            return View(notifications);
         }
     }
 }
