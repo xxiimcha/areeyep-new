@@ -40,17 +40,28 @@ namespace AreEyeP.Controllers
 
         // POST: Services/DeleteService
         [HttpPost]
-        public async Task<IActionResult> DeleteService(int id)
+        public async Task<IActionResult> DeleteService([FromBody] int id)
         {
-            var service = await _context.Services.FindAsync(id);
+            Console.WriteLine($"DeleteService called with id: {id}");
+
+            if (id <= 0)
+            {
+                Console.WriteLine("Invalid service ID received.");
+                return Json(new { success = false, message = "Invalid service ID." });
+            }
+
+            var service = await _context.Services.FirstOrDefaultAsync(s => s.Id == id);
             if (service != null)
             {
+                Console.WriteLine($"Service found: {service.ServiceName}");
                 _context.Services.Remove(service);
                 await _context.SaveChangesAsync();
                 return Json(new { success = true, message = "Service deleted successfully!" });
             }
 
+            Console.WriteLine($"Service not found for id: {id}");
             return Json(new { success = false, message = "Service not found." });
         }
+
     }
 }

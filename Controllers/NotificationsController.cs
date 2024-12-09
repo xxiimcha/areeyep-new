@@ -18,7 +18,7 @@ namespace AreEyeP.Controllers
 
         // GET: Notifications
         [HttpGet]
-        public async Task<IActionResult> Notifications()
+        public async Task<IActionResult> Index()
         {
             // Fetch logged-in user's ID and role
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -50,8 +50,18 @@ namespace AreEyeP.Controllers
             // Execute the query and fetch results
             var notifications = await notificationsQuery.ToListAsync();
 
-            // Pass the notifications to the view
-            return View(notifications);
+            // Categorize notifications into Application, ServiceRequests, Payments, and Renewals
+            var categorizedNotifications = new Dictionary<string, IEnumerable<Notification>>
+            {
+                { "Application", notifications.Where(n => n.Type == "Application") },
+                { "ServiceRequests", notifications.Where(n => n.Type == "Service Request") },
+                { "Payments", notifications.Where(n => n.Type == "Payments") },
+                { "Renewals", notifications.Where(n => n.Type == "Renewals") }
+            };
+
+            // Pass the categorized notifications to the view
+            return View("~/Views/Shared/Notifications.cshtml", categorizedNotifications);
         }
+
     }
 }

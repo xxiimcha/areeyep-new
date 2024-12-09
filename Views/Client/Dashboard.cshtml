@@ -151,12 +151,35 @@
                             const icon = (catacomb.AvailabilityStatus === 'Available') ? greenIcon : redIcon;
 
                             if (catacomb.latitude && catacomb.longitude) {
-                                const marker = L.marker([catacomb.latitude, catacomb.longitude], { icon: icon }).addTo(map);
+                                // Define dimensions for the tomb shape
+                                const baseWidth = 0.0001; // Adjust width
+                                const baseHeight = 0.00007; // Adjust height
+                                const roundedTopHeight = 0.00003; // Adjust rounded top height
 
-                                marker.on('click', function () {
+                                const lat = catacomb.latitude;
+                                const lng = catacomb.longitude;
+
+                                // Define the tomb-like shape as a polygon
+                                const tombCoords = [
+                                    [lat - baseHeight, lng - baseWidth], // Bottom-left of the base
+                                    [lat - baseHeight, lng + baseWidth], // Bottom-right of the base
+                                    [lat - baseHeight + roundedTopHeight, lng + baseWidth], // Start of rounded top
+                                    [lat, lng], // Top-center point
+                                    [lat - baseHeight + roundedTopHeight, lng - baseWidth], // End of rounded top
+                                ];
+
+                                // Set color based on availability status
+                                const color = (catacomb.AvailabilityStatus === 'Available') ? 'green' : 'red';
+
+                                // Create a polygon representing the tomb and add it to the map
+                                const tombShape = L.polygon(tombCoords, { color: color, weight: 2 }).addTo(map);
+
+                                // Add click event to show modal with catacomb details
+                                tombShape.on('click', function () {
                                     showModal(catacomb);
                                 });
                             }
+
                         });
                     } else {
                         console.error('Error fetching locations:', data.message);

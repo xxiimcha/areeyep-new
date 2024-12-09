@@ -128,7 +128,7 @@ namespace AreEyeP.Controllers
                     var notification = new Notification
                     {
                         Message = "A new burial application is waiting for approval.",
-                        TargetUser = "lgu",
+                        TargetUser = "LGU",
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         NotificationType = "info",
