@@ -66,6 +66,7 @@ namespace AreEyeP.Controllers
                     // Set the user's role and UserId in session
                     HttpContext.Session.SetString("UserRole", user.Role);
                     HttpContext.Session.SetInt32("UserId", user.Id);
+                    HttpContext.Session.SetString("UserName", user.Name);
 
                     // Redirect based on user role
                     switch (user.Role.Trim().ToLower())

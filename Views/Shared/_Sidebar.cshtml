@@ -2,14 +2,21 @@
 @{
     // Fetch the user's role from the session
     var userRole = Context.Session.GetString("UserRole");
+    var userName = Context.Session.GetString("UserName");
 }
-
 <div id="layoutSidenav_nav">
     <nav class="sb-sidenav accordion sb-sidenav-dark bg-success" id="sidenavAccordion">
         <!-- Changed background color to green -->
         <div class="sb-sidenav-menu">
             <div class="nav" style="color: white;">
-                @* Admin Role Sidebar Menu *@
+                <!-- User Information Section -->
+                <div class="text-center mt-3 mb-3">
+                    <h5 class="text-white">@userName</h5> <!-- Static Name -->
+                    <p class="text-white mb-0"> @char.ToUpper(userRole[0])@userRole.Substring(1)</p>
+                </div>
+                <hr style="border-color: white;" />
+
+                <!-- Admin Role Sidebar Menu -->
                 @if (userRole == "admin")
                 {
                     <a class="nav-link text-white" href="/Admin/Dashboard">
@@ -22,7 +29,7 @@
                     </a>
                 }
 
-                @* Staff Role Sidebar Menu *@
+                <!-- Staff Role Sidebar Menu -->
                 @if (userRole == "Staff")
                 {
                     <a class="nav-link text-white" href="/Staff/Dashboard">
@@ -47,7 +54,7 @@
                     </a>
                 }
 
-                @* LGU Role Sidebar Menu *@
+                <!-- LGU Role Sidebar Menu -->
                 @if (userRole == "lgu" || userRole == "LGU")
                 {
                     <a class="nav-link text-white" href="/LGU/Dashboard">
@@ -76,7 +83,7 @@
                     </a>
                 }
 
-                @* Client Role Sidebar Menu *@
+                <!-- Client Role Sidebar Menu -->
                 @if (userRole == "client")
                 {
                     <a class="nav-link text-white" href="/Client/Dashboard">
