@@ -150,17 +150,26 @@ namespace AreEyeP.Controllers
         [HttpGet]
         public JsonResult GetLocations()
         {
+            // Fetch all fields from the Catacombs table
             var catacombs = _context.Catacombs
-                .Select(c => new {
-                    CatacombName = c.CatacombName,
-                    Location = c.Location,
-                    AvailabilityStatus = c.AvailabilityStatus
-                }).ToList();
+                .Select(c => new
+                {
+                    c.Id,
+                    c.CatacombID,
+                    c.CatacombName,
+                    c.Location,
+                    c.AvailabilityStatus,
+                    c.DateCreated,
+                    c.DeceasedInformation // Assuming this is a nullable column
+                })
+                .ToList();
 
+            // Process the data to extract latitude and longitude from the Location field
             var locations = catacombs
                 .Where(c => !string.IsNullOrEmpty(c.Location) && c.Location.Contains(","))
-                .Select(c => {
-                    var cleanedLocation = c.Location.Replace(", ", ",");
+                .Select(c =>
+                {
+                    var cleanedLocation = c.Location.Replace(", ", ","); // Remove spaces after commas
                     var coordinates = cleanedLocation.Split(',');
                     if (coordinates.Length == 2 &&
                         double.TryParse(coordinates[0].Trim(), out double latitude) &&
@@ -168,16 +177,20 @@ namespace AreEyeP.Controllers
                     {
                         return new
                         {
-                            CatacombName = c.CatacombName,
+                            c.Id,
+                            c.CatacombID,
+                            c.CatacombName,
                             Latitude = latitude,
                             Longitude = longitude,
-                            AvailabilityStatus = c.AvailabilityStatus
+                            c.AvailabilityStatus,
+                            c.DateCreated,
+                            c.DeceasedInformation
                         };
                     }
 
-                    return null;
+                    return null; // Exclude rows with invalid Location data
                 })
-                .Where(c => c != null)
+                .Where(c => c != null) // Remove null results
                 .ToList();
 
             return Json(new { success = true, locations });
