@@ -28,7 +28,102 @@
         .offcanvas {
             width: 300px; /* Customize the width of the sidebar */
         }
+        #searchContainer {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #searchContainer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            width: 450px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 12px 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        #catacombSearch {
+            flex: 1;
+            border: none;
+            box-shadow: none;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+
+        #clearSearchButton {
+            margin-left: 12px;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+
+        #clearSearchButton:hover {
+            background-color: #6c757d; /* Slightly darker gray */
+            color: #fff; /* White text */
+            transform: scale(1.05); /* Slight zoom effect */
+            transition: all 0.3s ease; /* Smooth transition */
+        }
+
+        #suggestionsList {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 450px;
+            max-height: 200px; /* Limit the height for scrollability */
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1002;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        #suggestionsList li {
+            padding: 12px 15px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #suggestionsList li:hover {
+            background-color: #f0f0f0;
+        }
+
+        #suggestionsList li:active {
+            background-color: #e0e0e0;
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        #clearSearchButton:hover {
+            background-color: #6c757d; /* Slightly darker gray */
+            color: #fff; /* White text */
+            transform: scale(1.05); /* Slight zoom effect */
+            transition: all 0.3s ease; /* Smooth transition */
+        }
     </style>
+
 </head>
 <body class="sb-nav-fixed">
     @Html.Partial("_Header")
@@ -38,11 +133,20 @@
 
         <div id="layoutSidenav_content">
             <main>
+                <div id="searchContainer">
+                    <input type="text"
+                           id="catacombSearch"
+                           class="form-control"
+                           placeholder="Search Catacomb by Name or ID"
+                           autocomplete="off" />
+                    <button id="clearSearchButton" class="btn btn-secondary">Clear</button>
+                    <ul id="suggestionsList"></ul> <!-- Suggestions container -->
+                </div>
+
                 <div id="leafletMap"></div>
             </main>
         </div>
     </div>
-
     <!-- Sidebar for Catacomb Details -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="catacombSidebar" aria-labelledby="catacombSidebarLabel">
         <div class="offcanvas-header">
@@ -88,22 +192,116 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('catacombSearch');
+            const suggestionsList = document.getElementById('suggestionsList');
+            let markers = []; // Store catacomb markers
+            let deceasedData = []; // Store deceased data for searching
+
+            // Fetch deceased data on page load
+            fetch('/Deceased/GetAll') // Replace with your endpoint
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.deceased) {
+                        deceasedData = data.deceased;
+                        console.log("Deceased data loaded:", deceasedData);
+                    } else {
+                        console.warn("No deceased data found.");
+                    }
+                })
+                .catch(error => console.error("Error fetching deceased data:", error));
+
+            // Handle search input
+            searchInput.addEventListener('input', function () {
+                const query = searchInput.value.toLowerCase();
+                console.log(`Search query: ${query}`);
+
+                suggestionsList.innerHTML = ''; // Clear previous suggestions
+                suggestionsList.style.display = 'none'; // Hide by default
+
+                if (query.trim() === '') {
+                    markers.forEach(({ marker }) => marker.setOpacity(1)); // Reset marker opacity
+                    return;
+                }
+
+                const catacombSuggestions = markers.filter(({ catacomb }) =>
+                    catacomb.catacombName.toLowerCase().includes(query) ||
+                    catacomb.catacombID.toLowerCase().includes(query)
+                );
+
+                const deceasedSuggestions = deceasedData.filter(deceased =>
+                    deceased.firstName.toLowerCase().includes(query) ||
+                    deceased.lastName.toLowerCase().includes(query)
+                );
+
+                if (catacombSuggestions.length > 0 || deceasedSuggestions.length > 0) {
+                    suggestionsList.style.display = 'block'; // Show suggestions list
+
+                    // Add catacomb suggestions
+                    catacombSuggestions.forEach(({ catacomb }) => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${catacomb.catacombName} (${catacomb.catacombID})`;
+                        listItem.addEventListener('click', function () {
+                            console.log(`Clicked catacomb suggestion: ${catacomb.catacombName}`);
+
+                            // Focus map on the marker
+                            const { latitude, longitude } = catacomb;
+                            map.setView([latitude, longitude], 18);
+
+                            // Open marker popup
+                            const marker = markers.find(m => m.catacomb.catacombID === catacomb.catacombID).marker;
+                            marker.openPopup();
+
+                            // Display sidebar information
+                            showSidebar(catacomb);
+
+                            // Set input value and hide suggestions
+                            searchInput.value = catacomb.catacombName;
+                            suggestionsList.style.display = 'none';
+                        });
+                        suggestionsList.appendChild(listItem);
+                    });
+
+                    // Add deceased suggestions
+                    deceasedSuggestions.forEach(deceased => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${deceased.firstName} ${deceased.lastName} (Deceased)`;
+                        listItem.addEventListener('click', function () {
+                            console.log(`Clicked deceased suggestion: ${deceased.firstName} ${deceased.lastName}`);
+
+                            // Display deceased details in a modal or sidebar
+                            showDeceasedDetails(deceased);
+
+                            // Set input value and hide suggestions
+                            searchInput.value = `${deceased.firstName} ${deceased.lastName}`;
+                            suggestionsList.style.display = 'none';
+                        });
+                        suggestionsList.appendChild(listItem);
+                    });
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                    suggestionsList.style.display = 'none';
+                }
+            });
+
             console.log("Map initialization started.");
 
             const map = L.map('leafletMap', {
-                center: [10.302297, 123.956832], // Initial center point
-                zoom: 17,                       // Initial zoom level
+                center: [10.302297, 123.956832],
+                zoom: 17,
                 minZoom: 15,
                 maxZoom: 20
             });
 
-            let routePolyline; // Store the route
-            const simulatedCurrentLocation = [10.3082103, 123.9498301]; // Fixed current location coordinates
-
-            console.log("Adding OpenStreetMap tile layer.");
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
+
+            let routePolyline; // Store the route
+            const simulatedCurrentLocation = [10.3082103, 123.9498301]; // Fixed current location coordinates
 
             // Add marker for the fixed current location
             const currentLocationMarker = L.marker(simulatedCurrentLocation, {
@@ -155,6 +353,58 @@
                 document.getElementById('sidebarBlockNumber').textContent = catacomb.blockNumber || 'N/A';
                 document.getElementById('sidebarStreetNumber').textContent = catacomb.streetNumber || 'N/A';
                 document.getElementById('sidebarLocationCatacomb').textContent = `${catacomb.latitude}, ${catacomb.longitude}` || 'N/A';
+
+                // Check availability status
+                if (catacomb.availabilityStatus === 'Occupied') {
+                    console.log("Fetching deceased details for the occupied catacomb:", catacomb.catacombID);
+
+                    // Fetch deceased details using the `DeceasedInformation` ID
+                    fetch(`/Deceased/GetDetails/${catacomb.deceasedInformation}`)
+                        .then(response => response.json())
+                        .then(deceasedData => {
+                            if (deceasedData.success) {
+                                console.log("Deceased details received:", deceasedData);
+
+                                // Add deceased details to the sidebar
+                                const deceasedDetails = `
+                                <tr>
+                                    <th>First Name:</th>
+                                    <td>${deceasedData.firstName || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Name:</th>
+                                    <td>${deceasedData.lastName || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date of Birth:</th>
+                                    <td>${deceasedData.dateOfBirth || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date of Death:</th>
+                                    <td>${deceasedData.dateOfDeath || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>${deceasedData.address || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Cause of Death:</th>
+                                    <td>${deceasedData.causeOfDeath || 'N/A'}</td>
+                                </tr>
+                            `;
+
+                                const tableBody = document.querySelector('.offcanvas-body table tbody');
+                                tableBody.innerHTML += deceasedDetails;
+                            } else {
+                                console.warn("No deceased details found.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error fetching deceased details:", error);
+                        });
+                } else {
+                    console.log("Catacomb is available, no deceased details to display.");
+                }
 
                 document.getElementById('navigateButton').onclick = function () {
                     console.log("Navigate button clicked.");
@@ -209,6 +459,7 @@
                                     showSidebar(catacomb);
                                 });
 
+                                markers.push({ marker, catacomb });
                                 bounds.push([catacomb.latitude, catacomb.longitude]);
                             }
                         });
@@ -225,6 +476,5 @@
         });
 
     </script>
-
 </body>
 </html>
