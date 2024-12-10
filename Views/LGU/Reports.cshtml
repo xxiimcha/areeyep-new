@@ -1,6 +1,10 @@
 ﻿@{
     Layout = null; // Not using a shared layout file
     ViewData["Title"] = "LGU Reports";
+    var applicationStatusLabels = ViewData["ApplicationStatusLabels"] as string; // Serialized JSON
+    var applicationStatusData = ViewData["ApplicationStatusData"] as string; // Serialized JSON
+    var serviceRequestLabels = ViewData["ServiceRequestLabels"] as string; // Serialized JSON
+    var serviceRequestData = ViewData["ServiceRequestData"] as string; // Serialized JSON
 }
 
 <!DOCTYPE html>
@@ -31,55 +35,35 @@
                         <li class="breadcrumb-item active">Reports</li>
                     </ol>
 
-                    <!-- Dashboard Content -->
+                    <!-- Application Status Chart -->
                     <div class="row">
-                        <!-- Application Status Chart -->
                         <div class="col-xl-6 col-md-12">
                             <div class="card bg-light mb-4">
                                 <div class="card-header">Application Status Overview</div>
                                 <div class="card-body">
-                                    <canvas id="applicationStatusChart"></canvas>
+                                    <canvas id="applicationStatusChart" style="max-height: 300px;"></canvas>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Payments Data Chart -->
+                        <!-- Services Report Chart -->
                         <div class="col-xl-6 col-md-12">
                             <div class="card bg-light mb-4">
-                                <div class="card-header">Monthly Payments Summary</div>
+                                <div class="card-header">Service Requests Overview</div>
                                 <div class="card-body">
-                                    <canvas id="paymentsChart"></canvas>
+                                    <canvas id="serviceRequestsChart" style="max-height: 300px;"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Additional Analytics Section -->
+                    
                     <div class="row">
-                        <div class="col-xl-4 col-md-6">
-                            <div class="card bg-success text-white mb-4">
-                                <div class="card-body">Total Approved Applications</div>
-                                <div class="card-footer d-flex align-items-center justify-content-between">
-                                    <span>500</span>
-                                    <div class="small text-white"><i class="fas fa-check-circle"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-4 col-md-6">
-                            <div class="card bg-warning text-white mb-4">
-                                <div class="card-body">Total Pending Applications</div>
-                                <div class="card-footer d-flex align-items-center justify-content-between">
-                                    <span>200</span>
-                                    <div class="small text-white"><i class="fas fa-hourglass-half"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-4 col-md-6">
-                            <div class="card bg-danger text-white mb-4">
-                                <div class="card-body">Total Rejected Applications</div>
-                                <div class="card-footer d-flex align-items-center justify-content-between">
-                                    <span>50</span>
-                                    <div class="small text-white"><i class="fas fa-times-circle"></i></div>
+                        <!-- Payment Report Chart -->
+                        <div class="col-xl-6 col-md-12">
+                            <div class="card bg-light mb-4">
+                                <div class="card-header">Payment Overview</div>
+                                <div class="card-body">
+                                    <canvas id="paymentChart" style="max-height: 300px;"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -87,49 +71,110 @@
                 </div>
             </main>
         </div>
+    </div>
 
-        <!-- Include the Script Links Partial -->
-        @Html.Partial("_ScriptLinks")
+    <!-- Include the Script Links Partial -->
+    @Html.Partial("_ScriptLinks")
 
-        <script>
-            // Data for Application Statuses Chart
-            const applicationStatusData = {
-                labels: ['Approved', 'Pending', 'Rejected'], // Static labels for simplicity
-                datasets: [{
-                    label: 'Applications',
-                    data: [500, 200, 50], // Static data for simplicity
-                    backgroundColor: ['#4CAF50', '#FFC107', '#F44336'], // Colors for Approved, Pending, Rejected
-                }]
-            };
+    <script>
+        // Application Statuses Chart Data
+        const applicationStatusData = {
+            labels: @Html.Raw(applicationStatusLabels),
+            datasets: [{
+                label: 'Applications',
+                data: @Html.Raw(applicationStatusData),
+                backgroundColor: ['#4CAF50', '#FFC107', '#F44336', '#3E95CD'], // Colors for statuses
+            }]
+        };
 
-            // Application Status Chart
-            new Chart(document.getElementById('applicationStatusChart'), {
-                type: 'pie',
-                data: applicationStatusData
-            });
-
-            // Data for Payments Chart
-            const paymentsData = {
-                labels: ['January', 'February', 'March', 'April'], // Example months
-                datasets: [{
-                    label: 'Total Payments',
-                    data: [10000, 15000, 12000, 17000], // Static payment data for simplicity
-                    backgroundColor: '#3E95CD'
-                }]
-            };
-
-            // Payments Chart
-            new Chart(document.getElementById('paymentsChart'), {
-                type: 'bar',
-                data: paymentsData,
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+        // Render Application Status Chart
+        new Chart(document.getElementById('applicationStatusChart'), {
+            type: 'pie',
+            data: applicationStatusData,
+            options: {
+                plugins: {
+                    legend: {
+                        position: 'bottom'
                     }
                 }
-            });
-        </script>
+            }
+        });
+
+        // Service Requests Chart Data
+        const serviceRequestsData = {
+            labels: @Html.Raw(serviceRequestLabels),
+            datasets: [{
+                label: 'Requests',
+                data: @Html.Raw(serviceRequestData),
+                backgroundColor: '#3E95CD', // Bar color
+            }]
+        };
+
+        // Render Services Chart
+        new Chart(document.getElementById('serviceRequestsChart'), {
+            type: 'bar',
+            data: serviceRequestsData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Requests'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Service Types'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Payment Report Chart Data
+        const paymentData = {
+            labels: @Html.Raw(ViewData["PaymentLabels"]),
+            datasets: [{
+                label: 'Total Amount',
+                data: @Html.Raw(ViewData["PaymentData"]),
+                backgroundColor: ['#8E44AD', '#3498DB', '#2ECC71', '#E74C3C'], // Colors for different services
+            }]
+        };
+
+        // Render Payment Report Chart
+        new Chart(document.getElementById('paymentChart'), {
+            type: 'bar',
+            data: paymentData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Amount'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Service Types'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
