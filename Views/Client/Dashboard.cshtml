@@ -50,127 +50,181 @@
             <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-            <div>
-                <label>Name:</label>
-                <input type="text" id="sidebarName" class="form-control" readonly>
-                <label>Catacomb ID:</label>
-                <input type="text" id="sidebarCatacombId" class="form-control" readonly>
-                <label>Catacomb Number:</label>
-                <input type="text" id="sidebarCatacombNumber" class="form-control" readonly>
-                <label>Block Number:</label>
-                <input type="text" id="sidebarBlockNumber" class="form-control" readonly>
-                <label>Street Number:</label>
-                <input type="text" id="sidebarStreetNumber" class="form-control" readonly>
-                <label>Location Catacomb:</label>
-                <input type="text" id="sidebarLocationCatacomb" class="form-control" readonly>
-            </div>
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th>Name:</th>
+                        <td id="sidebarName">N/A</td>
+                    </tr>
+                    <tr>
+                        <th>Catacomb ID:</th>
+                        <td id="sidebarCatacombId">N/A</td>
+                    </tr>
+                    <tr>
+                        <th>Catacomb Number:</th>
+                        <td id="sidebarCatacombNumber">N/A</td>
+                    </tr>
+                    <tr>
+                        <th>Block Number:</th>
+                        <td id="sidebarBlockNumber">N/A</td>
+                    </tr>
+                    <tr>
+                        <th>Street Number:</th>
+                        <td id="sidebarStreetNumber">N/A</td>
+                    </tr>
+                    <tr>
+                        <th>Location:</th>
+                        <td id="sidebarLocationCatacomb">N/A</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button id="navigateButton" class="btn btn-primary mt-3">Navigate to Location</button>
         </div>
     </div>
+
 
     @Html.Partial("_ScriptLinks")
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            console.log("Map initialization started.");
+
             const map = L.map('leafletMap', {
-                center: [10.302297, 123.956832],
-                zoom: 17,
+                center: [10.302297, 123.956832], // Initial center point
+                zoom: 17,                       // Initial zoom level
                 minZoom: 15,
                 maxZoom: 20
             });
 
-            // Add OpenStreetMap tile layer
+            let routePolyline; // Store the route
+            const simulatedCurrentLocation = [10.3082103, 123.9498301]; // Fixed current location coordinates
+
+            console.log("Adding OpenStreetMap tile layer.");
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // Function to draw catacombs based on coordinates
-            function drawCatacombs(map, locations) {
-                locations.forEach(catacomb => {
-                    if (catacomb.latitude && catacomb.longitude) {
-                        const lat = catacomb.latitude;
-                        const lng = catacomb.longitude;
-
-                        const tombCoords = [
-                            [lat - 0.00006, lng - 0.00008],
-                            [lat - 0.00006, lng + 0.00008],
-                            [lat, lng],
-                            [lat - 0.00006, lng - 0.00008]
-                        ];
-
-                        const fillColor = catacomb.availabilityStatus === 'Available' ? 'green' : 'red';
-
-                        const tombstone = L.polygon(tombCoords, {
-                            color: 'black',
-                            fillColor: fillColor,
-                            fillOpacity: 0.7,
-                            weight: 1
-                        }).addTo(map);
-
-                        tombstone.bindTooltip(
-                            `<strong>${catacomb.catacombName || 'Unknown'}</strong><br>Status: ${catacomb.availabilityStatus || 'Unknown'}`,
-                            { permanent: false, direction: 'top' }
-                        );
-
-                        tombstone.on('click', function () {
-                            showSidebar(catacomb);
-                        });
-                    }
-                });
-            }
-
-            // Function to add pathways and decorations
-            function addDecorations(map) {
-                const pathways = [
-                    [[10.303, 123.954], [10.303, 123.957]],
-                    [[10.302, 123.954], [10.302, 123.957]],
-                    [[10.304, 123.955], [10.301, 123.955]]
-                ];
-                pathways.forEach(path => {
-                    L.polyline(path, { color: 'gray', weight: 2, dashArray: '5, 10' }).addTo(map);
-                });
-
-                const trees = [
-                    { lat: 10.3035, lng: 123.955, name: 'Tree 1' },
-                    { lat: 10.3025, lng: 123.956, name: 'Tree 2' },
-                    { lat: 10.303, lng: 123.957, name: 'Tree 3' }
-                ];
-                trees.forEach(tree => {
-                    L.circle([tree.lat, tree.lng], {
-                        color: 'green',
-                        fillColor: 'green',
-                        fillOpacity: 0.5,
-                        radius: 5
-                    }).bindTooltip(tree.name).addTo(map);
-                });
-            }
-
-            // Fetch and draw catacombs
-            fetch('/Catacomb/GetLocations')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.locations) {
-                        drawCatacombs(map, data.locations);
-                        addDecorations(map);
-                    } else {
-                        console.error('Error fetching locations:', data.message);
-                    }
+            // Add marker for the fixed current location
+            const currentLocationMarker = L.marker(simulatedCurrentLocation, {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
                 })
-                .catch(error => console.error('Error:', error));
+            }).addTo(map).bindPopup('Simulated Current Location').openPopup();
+
+            console.log("Simulated current location marker added at:", simulatedCurrentLocation);
+
+            // Function to fetch a route
+            function getRoute(start, end) {
+                console.log(`Fetching route from ${start} to ${end}.`);
+                const apiKey = '5b3ce3597851110001cf624825ebcfd826c5466e8fc6307d700988ec';
+                const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
+
+                console.log(`Route API URL: ${url}`);
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        const coordinates = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                        console.log("Coordinates for the route:", coordinates);
+
+                        if (routePolyline) {
+                            console.log("Removing previous route.");
+                            map.removeLayer(routePolyline); // Remove previous route
+                        }
+
+                        routePolyline = L.polyline(coordinates, { color: 'blue' }).addTo(map);
+                        console.log("Route added to the map.");
+                        map.fitBounds(routePolyline.getBounds());
+                        console.log("Map adjusted to fit the route bounds.");
+                    })
+                    .catch(error => console.error('Error fetching route:', error));
+            }
 
             // Function to show the sidebar with catacomb details
             function showSidebar(catacomb) {
-                document.getElementById('sidebarName').value = catacomb.catacombName || 'N/A';
-                document.getElementById('sidebarCatacombId').value = catacomb.catacombID || 'N/A';
-                document.getElementById('sidebarCatacombNumber').value = catacomb.catacombNumber || 'N/A';
-                document.getElementById('sidebarBlockNumber').value = catacomb.blockNumber || 'N/A';
-                document.getElementById('sidebarStreetNumber').value = catacomb.streetNumber || 'N/A';
-                document.getElementById('sidebarLocationCatacomb').value = `${catacomb.latitude}, ${catacomb.longitude}` || 'N/A';
+                console.log("Displaying sidebar for catacomb:", catacomb);
+
+                // Update the table cells with catacomb details
+                document.getElementById('sidebarName').textContent = catacomb.catacombName || 'N/A';
+                document.getElementById('sidebarCatacombId').textContent = catacomb.catacombID || 'N/A';
+                document.getElementById('sidebarCatacombNumber').textContent = catacomb.catacombNumber || 'N/A';
+                document.getElementById('sidebarBlockNumber').textContent = catacomb.blockNumber || 'N/A';
+                document.getElementById('sidebarStreetNumber').textContent = catacomb.streetNumber || 'N/A';
+                document.getElementById('sidebarLocationCatacomb').textContent = `${catacomb.latitude}, ${catacomb.longitude}` || 'N/A';
+
+                document.getElementById('navigateButton').onclick = function () {
+                    console.log("Navigate button clicked.");
+                    const start = simulatedCurrentLocation; // Use fixed current location
+                    const end = [catacomb.latitude, catacomb.longitude];
+                    console.log("Simulated current location:", start);
+                    console.log("Destination location:", end);
+                    getRoute(start, end);
+                };
 
                 const sidebar = new bootstrap.Offcanvas(document.getElementById('catacombSidebar'));
+                console.log("Opening sidebar.");
                 sidebar.show();
+
+                // Center map on the selected catacomb
+                console.log("Centering map on catacomb location:", [catacomb.latitude, catacomb.longitude]);
+                map.setView([catacomb.latitude, catacomb.longitude], 17);
             }
+
+            // Fetch and draw catacombs with different colors for availability
+            console.log("Fetching catacomb locations.");
+            fetch('/Catacomb/GetLocations')
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Catacomb data received:", data);
+
+                    if (data.success && data.locations) {
+                        console.log("Drawing catacombs on the map.");
+                        const bounds = [];
+
+                        data.locations.forEach(catacomb => {
+                            if (catacomb.latitude && catacomb.longitude) {
+                                // Determine marker color based on availability status
+                                const markerColor = catacomb.availabilityStatus === 'Available'
+                                    ? 'green'
+                                    : 'red';
+
+                                const marker = L.marker([catacomb.latitude, catacomb.longitude], {
+                                    icon: L.icon({
+                                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${markerColor}.png`,
+                                        iconSize: [25, 41],
+                                        iconAnchor: [12, 41],
+                                        popupAnchor: [1, -34],
+                                        shadowSize: [41, 41]
+                                    })
+                                }).addTo(map);
+
+                                console.log(`Marker added for catacomb: ${catacomb.catacombName} at [${catacomb.latitude}, ${catacomb.longitude}] with status: ${catacomb.availabilityStatus}.`);
+
+                                marker.on('click', function () {
+                                    console.log(`Marker clicked for catacomb: ${catacomb.catacombName}.`);
+                                    showSidebar(catacomb);
+                                });
+
+                                bounds.push([catacomb.latitude, catacomb.longitude]);
+                            }
+                        });
+
+                        if (bounds.length > 0) {
+                            console.log("Adjusting map to fit all catacombs.");
+                            map.fitBounds(bounds);
+                        }
+                    } else {
+                        console.warn("No catacomb locations found.");
+                    }
+                })
+                .catch(error => console.error('Error fetching locations:', error));
         });
+
     </script>
+
 </body>
 </html>
