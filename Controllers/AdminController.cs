@@ -64,20 +64,17 @@ namespace AreEyeP.Controllers
         // Method to generate the CatacombID
         private string GenerateCatacombID()
         {
-            var latestCatacomb = _context.Catacombs.OrderByDescending(c => c.Id).FirstOrDefault();
+            var random = new Random();
+            string catacombID;
 
-            int nextNumber = 1; // Start with 1 if no records found
-
-            if (latestCatacomb != null && !string.IsNullOrEmpty(latestCatacomb.CatacombID))
+            do
             {
-                var currentId = latestCatacomb.CatacombID.Replace("CTM-", "");
-                if (int.TryParse(currentId, out int currentNumber))
-                {
-                    nextNumber = currentNumber + 1;
-                }
+                int randomNumber = random.Next(1, 10000); // Generate a random number
+                catacombID = $"AEP{randomNumber:D4}"; // Format as AEPxxxx
             }
+            while (_context.Catacombs.Any(c => c.CatacombID == catacombID)); // Ensure uniqueness
 
-            return $"CTM-{nextNumber:D3}";
+            return catacombID;
         }
 
         // POST: Admin/AddUser
