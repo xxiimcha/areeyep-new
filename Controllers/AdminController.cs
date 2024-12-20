@@ -39,8 +39,19 @@ namespace AreEyeP.Controllers
         // GET: Admin/Dashboard
         public IActionResult Dashboard()
         {
+            // Fetch the total number of users
+            var totalUsers = _context.Users.Count();
+
+            // Fetch the total number of client accounts
+            var clientAccounts = _context.Users.Count(u => u.Role.ToLower() == "client");
+
+            // Pass the data to the view using ViewBag
+            ViewBag.TotalUsers = totalUsers;
+            ViewBag.ClientAccounts = clientAccounts;
+
             return View();
         }
+
 
         // GET: Admin/User
         public async Task<IActionResult> User()
