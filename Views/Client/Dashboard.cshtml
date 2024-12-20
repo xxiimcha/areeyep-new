@@ -334,6 +334,12 @@
                 document.getElementById('sidebarName').textContent = catacomb.catacombName || 'N/A';
                 document.getElementById('sidebarCatacombId').textContent = catacomb.catacombID || 'N/A';
 
+                // Clear any existing deceased details from the table
+                const tableBody = document.querySelector('.offcanvas-body table tbody');
+                while (tableBody.rows.length > 2) {
+                    tableBody.deleteRow(2); // Remove rows added after the static rows
+                }
+
                 // Check availability status
                 if (catacomb.availabilityStatus === 'Occupied') {
                     console.log("Fetching deceased details for the occupied catacomb:", catacomb.catacombID);
@@ -365,7 +371,6 @@
                                 </tr>
                             `;
 
-                                const tableBody = document.querySelector('.offcanvas-body table tbody');
                                 tableBody.innerHTML += deceasedDetails;
                             } else {
                                 console.warn("No deceased details found.");
@@ -395,6 +400,7 @@
                 console.log("Centering map on catacomb location:", [catacomb.latitude, catacomb.longitude]);
                 map.setView([catacomb.latitude, catacomb.longitude], 17);
             }
+
 
             // Fetch and draw catacombs with different colors for availability
             console.log("Fetching catacomb locations.");
