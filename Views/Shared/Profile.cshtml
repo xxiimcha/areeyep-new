@@ -13,6 +13,7 @@
 
     <!-- Include CSS Links Partial (if you have one) -->
     @Html.Partial("_CSSLinks")
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
 </head>
 <body class="sb-nav-fixed">
     <!-- Render the Header Partial (if you have one) -->
@@ -39,16 +40,13 @@
                             <form id="profileForm">
                                 <div class="mb-3">
                                     <label for="userName" class="form-label">Name</label>
-                                    <input type="text" class="form-control" id="userName" name="Name" value="@Model.Name" readonly />
+                                    <input type="text" class="form-control" id="userName" name="Name" value="@Model.Name" required />
                                 </div>
                                 <div class="mb-3">
                                     <label for="userEmail" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="userEmail" name="Email" value="@Model.Email" readonly />
+                                    <input type="email" class="form-control" id="userEmail" name="Email" value="@Model.Email" required />
                                 </div>
-                                <div class="mb-3">
-                                    <label for="userRole" class="form-label">Role</label>
-                                    <input type="text" class="form-control" id="userRole" name="Role" value="@Model.Role" readonly />
-                                </div>
+                                <button type="button" class="btn btn-primary" id="updateProfileBtn">Save Changes</button>
                             </form>
                         </div>
                     </div>
@@ -83,7 +81,7 @@
             <footer class="py-4 bg-light mt-auto">
                 <div class="container-fluid px-4">
                     <div class="d-flex align-items-center justify-content-between small">
-                        <div class="text-muted">© 2024 Your Company</div>
+                        <div class="text-muted">&copy; 2024 Your Company</div>
                         <div>
                             <a href="#">Privacy Policy</a> &middot;
                             <a href="#">Terms & Conditions</a>
@@ -96,9 +94,36 @@
 
     <!-- Include Script Links Partial (if you have one) -->
     @Html.Partial("_ScriptLinks")
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-    <!-- Add the following JavaScript for handling password change functionality -->
     <script>
+        document.getElementById('updateProfileBtn').addEventListener('click', function () {
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+
+            const payload = {
+                Name: name,
+                Email: email
+            };
+
+            fetch('/User/UpdateProfile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        toastr.success(result.message);
+                    } else {
+                        toastr.error(result.message);
+                    }
+                })
+                .catch(error => toastr.error('An error occurred while updating the profile.'));
+        });
+
         document.getElementById('changePasswordForm').addEventListener('submit', function (event) {
             event.preventDefault();
 
@@ -123,16 +148,16 @@
                 },
                 body: JSON.stringify(payload)
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    toastr.success(result.message);
-                    document.getElementById('changePasswordForm').reset();
-                } else {
-                    toastr.error(result.message);
-                }
-            })
-            .catch(error => toastr.error('An error occurred while changing the password.'));
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        toastr.success(result.message);
+                        document.getElementById('changePasswordForm').reset();
+                    } else {
+                        toastr.error(result.message);
+                    }
+                })
+                .catch(error => toastr.error('An error occurred while changing the password.'));
         });
     </script>
 </body>
