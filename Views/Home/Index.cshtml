@@ -2,6 +2,15 @@
 
 <body class="bg-gradient d-flex justify-content-center align-items-center" style="height: 100vh; margin: 0;">
     <div class="login-container card border-0 shadow-lg" style="width: auto; border-radius: 30px; padding: 30px;">
+        <!-- Alert Section -->
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
         <!-- Logo Section -->
         <div class="text-center mb-4">
             <img src="~/images/logo.png" alt="Logo" class="img-fluid" style="max-width: 150px;" /> <!-- Adjust the path to your logo image -->
@@ -83,6 +92,11 @@
                 a.text-success:hover {
                     text-decoration: underline; /* Optional: Only add underline on hover for visual feedback */
                 }
+
+        /* Alert styling */
+        .alert {
+            margin-bottom: 20px;
+        }
     </style>
 
     <!-- FontAwesome Icons -->

@@ -50,7 +50,6 @@ namespace AreEyeP.Controllers
             return View();
         }
 
-        // POST: /Account/Login
         [HttpPost]
         public IActionResult Login(LoginViewModel model)
         {
@@ -60,15 +59,12 @@ namespace AreEyeP.Controllers
 
                 if (user != null)
                 {
-                    // Debugging line to check the role of the user
-                    Console.WriteLine($"User role: {user.Role}"); // You can use this to debug in the output window
-
-                    // Set the user's role and UserId in session
+                    // Set user session data
                     HttpContext.Session.SetString("UserRole", user.Role);
                     HttpContext.Session.SetInt32("UserId", user.Id);
                     HttpContext.Session.SetString("UserName", user.Name);
 
-                    // Redirect based on user role
+                    // Redirect based on role
                     switch (user.Role.Trim().ToLower())
                     {
                         case "admin":
@@ -80,20 +76,20 @@ namespace AreEyeP.Controllers
                         case "client":
                             return RedirectToAction("Dashboard", "Client");
                         default:
-                            ModelState.AddModelError("", "Invalid role.");
-                            break;
+                            TempData["ErrorMessage"] = "Invalid role.";
+                            return RedirectToAction("Index", "Home");
                     }
                 }
                 else
                 {
-                    ModelState.AddModelError("", "Invalid login attempt.");
+                    TempData["ErrorMessage"] = "Invalid email or password.";
+                    return RedirectToAction("Index", "Home");
                 }
             }
 
-            // Return to the login page if there's an issue
-            return View(model);
+            TempData["ErrorMessage"] = "Please fill in all required fields.";
+            return RedirectToAction("Index", "Home");
         }
-
 
         // GET: /Account/Register
         [HttpGet]
