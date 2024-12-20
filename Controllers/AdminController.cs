@@ -63,13 +63,65 @@ namespace AreEyeP.Controllers
         // GET: /Admin/Catacombs
         public IActionResult Catacombs()
         {
-            var catacombs = _context.Catacombs.ToList();
+            var catacombs = _context.Catacombs
+                .Select(c => new
+                {
+                    c.Id,
+                    c.CatacombID,
+                    c.CatacombName,
+                    c.Location,
+                    c.AvailabilityStatus,
+                    c.DateCreated,
+                    Deceased = _context.Deceased
+                        .Where(d => d.Id.ToString() == c.DeceasedInformation)
+                        .Select(d => new
+                        {
+                            d.Id,
+                            FullName = $"{d.FirstName} {d.LastName}",
+                            d.DateOfBirth,
+                            d.DateOfDeath,
+                            d.Address,
+                            d.CauseOfDeath
+                        })
+                        .FirstOrDefault()
+                })
+                .ToList();
 
-            // Generate the next Catacomb ID
-            string generatedCatacombID = GenerateCatacombID();
-            ViewBag.GeneratedCatacombID = generatedCatacombID;
-
+            ViewBag.GeneratedCatacombID = GenerateCatacombID();
             return View(catacombs);
+        }
+
+        [HttpGet]
+        public IActionResult GetDeceasedDetails(int id)
+        {
+            try
+            {
+                // Fetch deceased details from the database
+                var deceased = _context.Deceased
+                    .Where(d => d.Id == id)
+                    .Select(d => new
+                    {
+                        FullName = d.FirstName + " " + d.LastName,
+                        d.DateOfBirth,
+                        d.DateOfDeath,
+                        d.Address,
+                        d.CauseOfDeath
+                    })
+                    .FirstOrDefault();
+
+                if (deceased == null)
+                {
+                    return Json(new { success = false, message = "Deceased record not found." });
+                }
+
+                return Json(new { success = true, deceased });
+            }
+            catch (Exception ex)
+            {
+                // Log the error for debugging
+                Console.WriteLine($"Error fetching deceased details: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while fetching deceased details." });
+            }
         }
 
         // Method to generate the CatacombID

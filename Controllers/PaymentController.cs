@@ -26,33 +26,36 @@ namespace AreEyeP.Controllers
             var payments = await _context.Payments.ToListAsync();
             return View(payments); // Pass the payments data to the view
         }
-
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddPayment(Payment payment, IFormFile QrCode)
-    {
-        // Use the ILogger instance
-        ILogger<PaymentController> logger = HttpContext.RequestServices.GetRequiredService<ILogger<PaymentController>>();
-
-        try
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddPayment(Payment payment, IFormFile QrCode)
         {
-            logger.LogInformation("AddPayment request received.");
+            ILogger<PaymentController> logger = HttpContext.RequestServices.GetRequiredService<ILogger<PaymentController>>();
 
-            // Validate model state
-            if (ModelState.IsValid)
+            try
             {
+                logger.LogInformation("AddPayment request received.");
+
+                // Check ModelState
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                                   .Select(e => e.ErrorMessage)
+                                                   .ToList();
+                    logger.LogWarning("Validation failed: {Errors}", string.Join(", ", errors));
+                    return Json(new { success = false, message = "Validation failed.", errors });
+                }
+
                 logger.LogInformation("Model state is valid.");
 
-                // File upload for QR code
+                // Process the QR Code
                 if (QrCode != null && QrCode.Length > 0)
                 {
-                    logger.LogInformation("Processing QR Code upload...");
+                    logger.LogInformation("Processing QR Code upload.");
 
                     var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "payment-methods");
                     if (!Directory.Exists(uploadsDirectory))
                     {
-                        logger.LogInformation("Uploads directory does not exist. Creating directory at {uploadsDirectory}.", uploadsDirectory);
                         Directory.CreateDirectory(uploadsDirectory);
                     }
 
@@ -62,71 +65,28 @@ namespace AreEyeP.Controllers
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await QrCode.CopyToAsync(stream);
-                        logger.LogInformation("QR Code uploaded successfully to {filePath}.", filePath);
                     }
 
-                    // Save the relative path of the QR code image
                     payment.QrCodePath = $"/uploads/payment-methods/{fileName}";
                 }
 
-                // Additional validation for payment mode
-                if (payment.PaymentMode == "ewallet")
-                {
-                    if (string.IsNullOrWhiteSpace(payment.BankName))
-                    {
-                        logger.LogWarning("eWallet Provider is missing.");
-                        return Json(new { success = false, message = "eWallet Provider is required." });
-                    }
-                    if (string.IsNullOrWhiteSpace(payment.AccountNumber))
-                    {
-                        logger.LogWarning("eWallet number is missing.");
-                        return Json(new { success = false, message = "eWallet number is required." });
-                    }
-                    logger.LogInformation("eWallet validation passed.");
-                }
-                else if (payment.PaymentMode == "bank")
-                {
-                    if (string.IsNullOrWhiteSpace(payment.BankName))
-                    {
-                        logger.LogWarning("Bank Name is missing for bank transfer.");
-                        return Json(new { success = false, message = "Bank Name is required for bank transfer." });
-                    }
-                    if (string.IsNullOrWhiteSpace(payment.AccountNumber))
-                    {
-                        logger.LogWarning("Account Number is missing for bank transfer.");
-                        return Json(new { success = false, message = "Account Number is required for bank transfer." });
-                    }
-                    logger.LogInformation("Bank transfer validation passed.");
-                }
-
-                // Save the payment record to the database
                 logger.LogInformation("Saving payment record to the database.");
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
-                logger.LogInformation("Payment record saved successfully with ID {PaymentId}.", payment.Id);
 
+                logger.LogInformation("Payment record saved successfully with ID {PaymentId}.", payment.Id);
                 return Json(new { success = true, message = "Payment details uploaded successfully!" });
             }
-            else
+            catch (Exception ex)
             {
-                // Collect and return validation errors
-                var errors = ModelState.Values.SelectMany(v => v.Errors)
-                                               .Select(e => e.ErrorMessage)
-                                               .ToList();
-                logger.LogWarning("Validation failed. Errors: {Errors}", string.Join(", ", errors));
-                return Json(new { success = false, message = "Validation failed.", errors });
+                logger.LogError(ex, "An unexpected error occurred.");
+                return Json(new { success = false, message = "An unexpected error occurred.", error = ex.Message });
             }
         }
-        catch (Exception ex)
-        {
-            // Log the error and return a JSON error response
-            logger.LogError(ex, "An unexpected error occurred while processing AddPayment.");
-            return Json(new { success = false, message = "An unexpected error occurred.", error = ex.Message });
-        }
-    }
 
-    // POST: Payment/Delete/5
-    [HttpPost, ActionName("Delete")]
+
+        // POST: Payment/Delete/5
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
