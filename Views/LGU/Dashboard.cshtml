@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
 
-    <!-- Include the CSS Links Partial -->
+    <!-- Include CSS -->
     @Html.Partial("_CSSLinks")
 </head>
 <body class="sb-nav-fixed">
@@ -30,11 +30,11 @@
                         <li class="breadcrumb-item active">Dashboard</li>
                     </ol>
 
-                    <!-- Dashboard Content -->
+                    <!-- Dashboard Cards -->
                     <div class="row">
                         <div class="col-xl-3 col-md-6">
                             <div class="card bg-primary text-white mb-4">
-                                <div class="card-body">Total Users</div>
+                                <div class="card-body">Total Applications</div>
                                 <div class="card-footer d-flex align-items-center justify-content-between">
                                     <a class="small text-white stretched-link" href="#">View Details</a>
                                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
@@ -43,7 +43,7 @@
                         </div>
                         <div class="col-xl-3 col-md-6">
                             <div class="card bg-warning text-white mb-4">
-                                <div class="card-body">Reports</div>
+                                <div class="card-body">Service Requests</div>
                                 <div class="card-footer d-flex align-items-center justify-content-between">
                                     <a class="small text-white stretched-link" href="#">View Details</a>
                                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
@@ -52,16 +52,7 @@
                         </div>
                         <div class="col-xl-3 col-md-6">
                             <div class="card bg-success text-white mb-4">
-                                <div class="card-body">Analytics</div>
-                                <div class="card-footer d-flex align-items-center justify-content-between">
-                                    <a class="small text-white stretched-link" href="#">View Details</a>
-                                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6">
-                            <div class="card bg-danger text-white mb-4">
-                                <div class="card-body">Notifications</div>
+                                <div class="card-body">Payments</div>
                                 <div class="card-footer d-flex align-items-center justify-content-between">
                                     <a class="small text-white stretched-link" href="#">View Details</a>
                                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
@@ -69,11 +60,128 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Chart Section -->
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    Application Status
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="applicationStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    Service Requests
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="serviceRequestChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-12">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    Payments Overview
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="paymentChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
+        </div>
     </div>
 
-    <!-- Include the Script Links Partial -->
+    <!-- Include Scripts -->
     @Html.Partial("_ScriptLinks")
+
+    <!-- Chart.js Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Deserialize ViewData with Debugging
+        try {
+            const applicationStatusLabels = JSON.parse('@Html.Raw(ViewData["ApplicationStatusLabels"])');
+            const applicationStatusData = JSON.parse('@Html.Raw(ViewData["ApplicationStatusData"])');
+            const serviceRequestLabels = JSON.parse('@Html.Raw(ViewData["ServiceRequestLabels"])');
+            const serviceRequestData = JSON.parse('@Html.Raw(ViewData["ServiceRequestData"])');
+            const paymentLabels = JSON.parse('@Html.Raw(ViewData["PaymentLabels"])');
+            const paymentData = JSON.parse('@Html.Raw(ViewData["PaymentData"])');
+
+            // Debugging output to console
+            console.log("Application Status Labels:", applicationStatusLabels);
+            console.log("Application Status Data:", applicationStatusData);
+            console.log("Service Request Labels:", serviceRequestLabels);
+            console.log("Service Request Data:", serviceRequestData);
+            console.log("Payment Labels:", paymentLabels);
+            console.log("Payment Data:", paymentData);
+
+            // Application Status Chart
+            const applicationStatusCtx = document.getElementById('applicationStatusChart').getContext('2d');
+            new Chart(applicationStatusCtx, {
+                type: 'pie',
+                data: {
+                    labels: applicationStatusLabels,
+                    datasets: [{
+                        data: applicationStatusData,
+                        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545'],
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Service Request Chart
+            const serviceRequestCtx = document.getElementById('serviceRequestChart').getContext('2d');
+            new Chart(serviceRequestCtx, {
+                type: 'bar',
+                data: {
+                    labels: serviceRequestLabels,
+                    datasets: [{
+                        label: 'Service Requests',
+                        data: serviceRequestData,
+                        backgroundColor: '#28a745',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Payment Chart
+            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+            new Chart(paymentCtx, {
+                type: 'line',
+                data: {
+                    labels: paymentLabels,
+                    datasets: [{
+                        label: 'Total Payments',
+                        data: paymentData,
+                        backgroundColor: 'rgba(255,99,132,0.2)',
+                        borderColor: 'rgba(255,99,132,1)',
+                        borderWidth: 1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error initializing charts:", error);
+        }
+    </script>
 </body>
 </html>

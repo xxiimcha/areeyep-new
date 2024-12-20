@@ -131,43 +131,21 @@ namespace AreEyeP.Controllers
             {
                 int applicationId = request.ApplicationId;
 
-                // Log the applicationId for verification
-                Console.WriteLine($"Received applicationId: {applicationId} (Type: {applicationId.GetType()})");
-
-                // Direct SQL check to verify record existence
-                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
-                {
-                    connection.Open();
-                    var command = new SqlCommand("SELECT COUNT(*) FROM BurialApplications WHERE Id = @Id", connection);
-                    command.Parameters.AddWithValue("@Id", applicationId);
-
-                    var count = (int)command.ExecuteScalar();
-                    Console.WriteLine($"Direct SQL check: Records found with Id = {applicationId}: {count}");
-
-                    if (count == 0)
-                    {
-                        Console.WriteLine("Application record not found in direct SQL check.");
-                        return Json(new { success = false, message = "Application record not found." });
-                    }
-                }
-
-                // Fetch application without AsNoTracking to allow for status update
+                // Fetch application record
                 var application = _context.BurialApplications.FirstOrDefault(a => a.Id == applicationId);
                 if (application == null)
                 {
-                    Console.WriteLine("Application record not found in Entity Framework query.");
-                    return Json(new { success = false, message = "Application record not found in Entity Framework query." });
+                    return Json(new { success = false, message = "Application record not found." });
                 }
 
-                // Attempt to fetch the associated payment record
+                // Fetch payment record
                 var payment = _context.ClientPayments.FirstOrDefault(p => p.ApplicationId == applicationId);
                 if (payment == null)
                 {
-                    Console.WriteLine("Payment record not found.");
                     return Json(new { success = false, message = "Payment record not found." });
                 }
 
-                // Update statuses
+                // Update application and payment statuses
                 application.Status = "Approved";
                 payment.Status = "Completed";
                 _context.SaveChanges();
@@ -193,35 +171,41 @@ namespace AreEyeP.Controllers
 
                 // Assign a random available catacomb to the deceased
                 var availableCatacomb = _context.Catacombs
-                    .Where(c => c.AvailabilityStatus == "Available") // Check if the catacomb is available by string comparison
-                    .OrderBy(c => Guid.NewGuid())  // Randomly select an available catacomb
+                    .Where(c => c.AvailabilityStatus == "Available")
+                    .OrderBy(c => Guid.NewGuid())
                     .FirstOrDefault();
 
                 if (availableCatacomb != null)
                 {
-                    availableCatacomb.AvailabilityStatus = "Occupied"; // Set the status to "Occupied"
-                    availableCatacomb.DeceasedInformation = deceasedId.ToString(); // Convert int to string
-
+                    availableCatacomb.AvailabilityStatus = "Occupied";
+                    availableCatacomb.DeceasedInformation = deceasedId.ToString();
                     _context.SaveChanges();
-
-                    Console.WriteLine($"Assigned Catacomb ID: {availableCatacomb.Id} to Deceased ID: {deceasedId}");
                 }
                 else
                 {
-                    Console.WriteLine("No available catacombs found.");
                     return Json(new { success = false, message = "No available catacombs to assign." });
                 }
 
+                // Insert a notification for the client
+                var notification = new Notification
+                {
+                    Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been approved. Assigned Catacomb: {availableCatacomb?.Id}",
+                    TargetUser = "client", // Set target user type as "Client"
+                    UserId = application.UserId, // Populate UserId for the specific client
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    NotificationType = "info",
+                    Type = "Application"
+                };
 
-                // Log successful completion
-                Console.WriteLine("Application and payment statuses updated, deceased record inserted, and catacomb assigned successfully.");
-                return Json(new { success = true, message = "Application completed, statuses updated, and catacomb assigned successfully." });
+                _context.Notifications.Add(notification);
+                _context.SaveChanges();
+
+                return Json(new { success = true, message = "Application completed, statuses updated, catacomb assigned, and notification sent to the client." });
             }
             catch (Exception ex)
             {
-                // Log any exception that occurs
-                Console.WriteLine("Error completing application: " + ex.Message);
-                return Json(new { success = false, message = "An error occurred while completing the application." });
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
             }
         }
 
