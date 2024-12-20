@@ -15,6 +15,7 @@ namespace AreEyeP.Controllers
             _context = context;
             SeedAdminUser(); // Seed admin user upon controller instantiation
         }
+
         private void SeedAdminUser()
         {
             // Check if any admin user already exists
@@ -41,6 +42,12 @@ namespace AreEyeP.Controllers
 
             // Redirect to the login page
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
         }
 
         // GET: /Account/Login
@@ -109,7 +116,22 @@ namespace AreEyeP.Controllers
 
                 if (isRegistrationSuccessful)
                 {
-                    // Redirect to login after successful registration
+                    try
+                    {
+                        // Send confirmation email
+                        AreEyeP.Helpers.EmailHelper.SendEmailConfirmation(model.Email, $"{model.FirstName} {model.LastName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the error and set TempData for email failure (optional)
+                        Console.WriteLine($"Error sending email: {ex.Message}");
+                        TempData["ErrorMessage"] = "Your account was created, but we couldn't send a confirmation email. Please contact support.";
+                    }
+
+                    // Use TempData to pass success message to the Index action
+                    TempData["SuccessMessage"] = "Your account has been registered successfully! Please check your email for confirmation.";
+
+                    // Redirect to the Index page after successful registration
                     return RedirectToAction("Index", "Home");
                 }
                 else
@@ -143,23 +165,27 @@ namespace AreEyeP.Controllers
                 };
                 _context.Users.Add(user);
 
-                // Save changes to get the user Id
+                // Save changes to get the User ID
                 _context.SaveChanges();
 
-                // Attach the userId to the Client table entry
-                model.Id = user.Id;
+                // Attach the UserId to the RegistrationViewModel (Client)
+                model.UserId = user.Id; // Ensure UserId is part of RegistrationViewModel
 
-                // Add the new user to the Client table using RegistrationViewModel
+                // Add the new user to the Clients table using RegistrationViewModel
                 _context.Clients.Add(model);
 
                 // Save changes to the database
                 _context.SaveChanges();
+
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                // Log the error for debugging purposes
+                Console.WriteLine($"Error saving new user: {ex.Message}");
                 return false;
             }
         }
+
     }
 }
