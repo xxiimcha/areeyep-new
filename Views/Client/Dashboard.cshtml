@@ -161,24 +161,8 @@
                         <td id="sidebarName">N/A</td>
                     </tr>
                     <tr>
-                        <th>Catacomb ID:</th>
-                        <td id="sidebarCatacombId">N/A</td>
-                    </tr>
-                    <tr>
                         <th>Catacomb Number:</th>
-                        <td id="sidebarCatacombNumber">N/A</td>
-                    </tr>
-                    <tr>
-                        <th>Block Number:</th>
-                        <td id="sidebarBlockNumber">N/A</td>
-                    </tr>
-                    <tr>
-                        <th>Street Number:</th>
-                        <td id="sidebarStreetNumber">N/A</td>
-                    </tr>
-                    <tr>
-                        <th>Location:</th>
-                        <td id="sidebarLocationCatacomb">N/A</td>
+                        <td id="sidebarCatacombId">N/A</td>
                     </tr>
                 </tbody>
             </table>
@@ -349,10 +333,6 @@
                 // Update the table cells with catacomb details
                 document.getElementById('sidebarName').textContent = catacomb.catacombName || 'N/A';
                 document.getElementById('sidebarCatacombId').textContent = catacomb.catacombID || 'N/A';
-                document.getElementById('sidebarCatacombNumber').textContent = catacomb.catacombNumber || 'N/A';
-                document.getElementById('sidebarBlockNumber').textContent = catacomb.blockNumber || 'N/A';
-                document.getElementById('sidebarStreetNumber').textContent = catacomb.streetNumber || 'N/A';
-                document.getElementById('sidebarLocationCatacomb').textContent = `${catacomb.latitude}, ${catacomb.longitude}` || 'N/A';
 
                 // Check availability status
                 if (catacomb.availabilityStatus === 'Occupied') {
@@ -382,14 +362,6 @@
                                 <tr>
                                     <th>Date of Death:</th>
                                     <td>${deceasedData.dateOfDeath || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <th>Address:</th>
-                                    <td>${deceasedData.address || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <th>Cause of Death:</th>
-                                    <td>${deceasedData.causeOfDeath || 'N/A'}</td>
                                 </tr>
                             `;
 

@@ -29,21 +29,25 @@ namespace AreEyeP.Controllers
             var applicationStatusLabels = applicationStatuses.Select(s => s.Status).ToList();
             var applicationStatusData = applicationStatuses.Select(s => s.Count).ToList();
 
-            // Service Requests Data
-            var servicesReport = _context.ServiceRequests
-                .Join(
-                    _context.Services,
-                    sr => sr.ServiceType,
-                    s => s.Id.ToString(),
-                    (sr, s) => new { s.ServiceName }
-                )
-                .GroupBy(x => x.ServiceName)
+            // Service Requests Data (Include all services even if no requests)
+            var allServices = _context.Services.Select(s => new { s.Id, s.ServiceName }).ToList();
+
+            var serviceRequestCounts = _context.ServiceRequests
+                .GroupBy(sr => sr.ServiceType)
                 .Select(g => new
                 {
-                    ServiceName = g.Key,
+                    ServiceId = g.Key,
                     Count = g.Count()
                 })
                 .ToList();
+
+            var servicesReport = allServices.Select(service => new
+            {
+                ServiceName = service.ServiceName,
+                Count = serviceRequestCounts
+                    .FirstOrDefault(sr => sr.ServiceId == service.Id.ToString())
+                    ?.Count ?? 0
+            }).ToList();
 
             var serviceRequestLabels = servicesReport.Select(s => s.ServiceName).ToList();
             var serviceRequestData = servicesReport.Select(s => s.Count).ToList();
@@ -74,7 +78,7 @@ namespace AreEyeP.Controllers
 
         public IActionResult DownloadReport()
         {
-            // Fetch data for the report
+            // Application Status Data
             var applicationStatuses = _context.BurialApplications
                 .GroupBy(a => a.Status)
                 .Select(g => new
@@ -84,21 +88,27 @@ namespace AreEyeP.Controllers
                 })
                 .ToList();
 
-            var servicesReport = _context.ServiceRequests
-                .Join(
-                    _context.Services,
-                    sr => sr.ServiceType,
-                    s => s.Id.ToString(),
-                    (sr, s) => new { ServiceName = s.ServiceName }
-                )
-                .GroupBy(x => x.ServiceName)
+            // Service Requests Data (Include all services even if no requests)
+            var allServices = _context.Services.Select(s => new { s.Id, s.ServiceName }).ToList();
+
+            var serviceRequestCounts = _context.ServiceRequests
+                .GroupBy(sr => sr.ServiceType)
                 .Select(g => new
                 {
-                    ServiceName = g.Key,
+                    ServiceId = g.Key,
                     Count = g.Count()
                 })
                 .ToList();
 
+            var servicesReport = allServices.Select(service => new
+            {
+                ServiceName = service.ServiceName,
+                Count = serviceRequestCounts
+                    .FirstOrDefault(sr => sr.ServiceId == service.Id.ToString())
+                    ?.Count ?? 0
+            }).ToList();
+
+            // Payments Report Data
             var paymentsReport = _context.ClientPayments
                 .GroupBy(p => p.ServiceType)
                 .Select(g => new
@@ -159,6 +169,5 @@ namespace AreEyeP.Controllers
 
             return result;
         }
-
     }
 }
