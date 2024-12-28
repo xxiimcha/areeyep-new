@@ -41,6 +41,10 @@ namespace AreEyeP.Models
         [Required]
         public int ServiceRequestId { get; set; } // Link to the ServiceRequest
 
+        // Column to store the path to the payment proof
+        [StringLength(255, ErrorMessage = "Payment proof path cannot exceed 255 characters.")]
+        public string PaymentProof { get; set; }
+
         // Navigation property to link with the BurialApplication entity
         [ForeignKey("ApplicationId")]
         public virtual BurialApplication BurialApplication { get; set; }

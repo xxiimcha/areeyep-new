@@ -99,5 +99,79 @@ namespace AreEyeP.Controllers
 
             return Json(new { success = true, message = "Payment record deleted successfully!" });
         }
+
+        // POST: Payment/UploadReceipt
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadReceipt(IFormFile uploadReceipt, int applicationId)
+        {
+            if (uploadReceipt == null || applicationId <= 0)
+            {
+                return Json(new { success = false, message = "Invalid file or application ID." });
+            }
+
+            try
+            {
+                // Define the directory to store receipts
+                var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "receipts");
+
+                // Create the directory if it doesn't exist
+                if (!Directory.Exists(uploadsPath))
+                {
+                    Directory.CreateDirectory(uploadsPath);
+                }
+
+                // Generate a unique file name
+                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(uploadReceipt.FileName)}";
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                // Save the file
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadReceipt.CopyToAsync(stream);
+                }
+
+                // Save the file path to the database
+                var clientPayment = await _context.ClientPayments
+                    .FirstOrDefaultAsync(p => p.ApplicationId == applicationId);
+
+                if (clientPayment == null)
+                {
+                    // Create a new ClientPayment record if it doesn't exist
+                    clientPayment = new ClientPayment
+                    {
+                        ApplicationId = applicationId,
+                        UserId = 0, // Replace with the actual UserId
+                        Amount = 0, // Replace with the payment amount if needed
+                        PaymentMethod = "Walk-in", // Default method for uploading a receipt
+                        Status = "For Review", // Default status for new payments
+                        PaymentDate = DateTime.Now,
+                        ReferenceNumber = null,
+                        ServiceType = "Default", // Replace with the actual service type
+                        ServiceRequestId = 0, // Replace with the actual service request ID
+                        PaymentProof = $"/receipts/{fileName}"
+                    };
+                    _context.ClientPayments.Add(clientPayment);
+                }
+                else
+                {
+                    // Update the existing record
+                    clientPayment.PaymentProof = $"/receipts/{fileName}";
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Receipt uploaded successfully.",
+                    filePath = $"/receipts/{fileName}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
+            }
+        }
     }
 }
