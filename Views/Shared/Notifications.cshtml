@@ -3,6 +3,12 @@
 @{
     Layout = null;  // Not using the _Layout.cshtml file for this specific page
     ViewData["Title"] = "Notifications";
+
+    // Determine if there are unread notifications for each category
+    var hasUnreadApplication = Model.ContainsKey("Application") && Model["Application"].Any(n => !n.IsRead);
+    var hasUnreadServiceRequests = Model.ContainsKey("ServiceRequests") && Model["ServiceRequests"].Any(n => !n.IsRead);
+    var hasUnreadPayments = Model.ContainsKey("Payments") && Model["Payments"].Any(n => !n.IsRead);
+    var hasUnreadRenewals = Model.ContainsKey("Renewals") && Model["Renewals"].Any(n => !n.IsRead);
 }
 
 <!DOCTYPE html>
@@ -23,6 +29,11 @@
             background-color: #f9f9f9;
         }
 
+            .notification-card.unread {
+                background-color: #eaf2ff; /* Highlight unread notifications */
+                font-weight: bold;
+            }
+
             .notification-card h5 {
                 margin: 0;
                 font-weight: bold;
@@ -36,6 +47,20 @@
                 font-size: 0.9em;
                 color: #888;
             }
+
+        .btn-mark-all,
+        .btn-clear-all {
+            margin: 10px 0;
+        }
+
+        .nav-link .dot {
+            height: 8px;
+            width: 8px;
+            background-color: red;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body class="sb-nav-fixed">
@@ -51,99 +76,74 @@
                 <div class="container-fluid px-4">
                     <h2 class="text-center mt-4 mb-4">Notifications</h2>
 
+                    <!-- Mark All as Read and Clear All Notifications -->
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-primary btn-mark-all me-2" onclick="markAllAsRead()">Mark All as Read</button>
+                        <button class="btn btn-danger btn-clear-all" onclick="clearNotifications()">Clear All Notifications</button>
+                    </div>
+
                     <!-- Nav Tabs -->
                     <ul class="nav nav-tabs" id="notificationTabs" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active" id="application-tab" data-bs-toggle="tab" href="#application" role="tab" aria-controls="application" aria-selected="true">Application</a>
+                            <a class="nav-link active" id="application-tab" data-bs-toggle="tab" href="#application" role="tab" aria-controls="application" aria-selected="true">
+                                Application
+                                @if (hasUnreadApplication)
+                                {
+                                    <span class="dot"></span>
+                                }
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="service-requests-tab" data-bs-toggle="tab" href="#service-requests" role="tab" aria-controls="service-requests" aria-selected="false">Service Requests</a>
+                            <a class="nav-link" id="service-requests-tab" data-bs-toggle="tab" href="#service-requests" role="tab" aria-controls="service-requests" aria-selected="false">
+                                Service Requests
+                                @if (hasUnreadServiceRequests)
+                                {
+                                    <span class="dot"></span>
+                                }
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="payments-tab" data-bs-toggle="tab" href="#payments" role="tab" aria-controls="payments" aria-selected="false">Payments</a>
+                            <a class="nav-link" id="payments-tab" data-bs-toggle="tab" href="#payments" role="tab" aria-controls="payments" aria-selected="false">
+                                Payments
+                                @if (hasUnreadPayments)
+                                {
+                                    <span class="dot"></span>
+                                }
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="renewals-tab" data-bs-toggle="tab" href="#renewals" role="tab" aria-controls="renewals" aria-selected="false">Renewals</a>
+                            <a class="nav-link" id="renewals-tab" data-bs-toggle="tab" href="#renewals" role="tab" aria-controls="renewals" aria-selected="false">
+                                Renewals
+                                @if (hasUnreadRenewals)
+                                {
+                                    <span class="dot"></span>
+                                }
+                            </a>
                         </li>
                     </ul>
 
                     <!-- Tab Content -->
                     <div class="tab-content" id="notificationTabContent">
-                        <!-- Application Tab -->
-                        <div class="tab-pane fade show active" id="application" role="tabpanel" aria-labelledby="application-tab">
-                            @if (Model.ContainsKey("Application") && Model["Application"].Any())
-                            {
-                                foreach (var notification in Model["Application"])
+                        @foreach (var category in Model)
+                        {
+                            <div class="tab-pane fade @(category.Key == "Application" ? "show active" : "")" id="@category.Key.ToLower()" role="tabpanel" aria-labelledby="@category.Key.ToLower()-tab">
+                                @if (category.Value.Any())
                                 {
-                                    <div class="notification-card mt-3">
-                                        <h5>@notification.Type</h5>
-                                        <p>@notification.Message</p>
-                                        <p class="date">Posted on: @notification.CreatedAt.ToString("MMMM dd, yyyy")</p>
-                                    </div>
+                                    foreach (var notification in category.Value)
+                                    {
+                                        <div class="notification-card mt-3 @(notification.IsRead ? "" : "unread")" onclick="markAsRead(@notification.Id)">
+                                            <h5>@notification.Type</h5>
+                                            <p>@notification.Message</p>
+                                            <p class="date">Posted on: @notification.CreatedAt.ToString("MMMM dd, yyyy")</p>
+                                        </div>
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                <p class="text-center mt-3">No application notifications found.</p>
-                            }
-                        </div>
-
-                        <!-- Service Requests Tab -->
-                        <div class="tab-pane fade" id="service-requests" role="tabpanel" aria-labelledby="service-requests-tab">
-                            @if (Model.ContainsKey("ServiceRequests") && Model["ServiceRequests"].Any())
-                            {
-                                foreach (var notification in Model["ServiceRequests"])
+                                else
                                 {
-                                    <div class="notification-card mt-3">
-                                        <h5>@notification.Type</h5>
-                                        <p>@notification.Message</p>
-                                        <p class="date">Posted on: @notification.CreatedAt.ToString("MMMM dd, yyyy")</p>
-                                    </div>
+                                    <p class="text-center mt-3">No @category.Key.ToLower() notifications found.</p>
                                 }
-                            }
-                            else
-                            {
-                                <p class="text-center mt-3">No service request notifications found.</p>
-                            }
-                        </div>
-
-                        <!-- Payments Tab -->
-                        <div class="tab-pane fade" id="payments" role="tabpanel" aria-labelledby="payments-tab">
-                            @if (Model.ContainsKey("Payments") && Model["Payments"].Any())
-                            {
-                                foreach (var notification in Model["Payments"])
-                                {
-                                    <div class="notification-card mt-3">
-                                        <h5>@notification.Type</h5>
-                                        <p>@notification.Message</p>
-                                        <p class="date">Posted on: @notification.CreatedAt.ToString("MMMM dd, yyyy")</p>
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <p class="text-center mt-3">No payment notifications found.</p>
-                            }
-                        </div>
-
-                        <!-- Renewals Tab -->
-                        <div class="tab-pane fade" id="renewals" role="tabpanel" aria-labelledby="renewals-tab">
-                            @if (Model.ContainsKey("Renewals") && Model["Renewals"].Any())
-                            {
-                                foreach (var notification in Model["Renewals"])
-                                {
-                                    <div class="notification-card mt-3">
-                                        <h5>@notification.Type</h5>
-                                        <p>@notification.Message</p>
-                                        <p class="date">Posted on: @notification.CreatedAt.ToString("MMMM dd, yyyy")</p>
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <p class="text-center mt-3">No renewal notifications found.</p>
-                            }
-                        </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </main>
@@ -152,5 +152,53 @@
 
     <!-- Include the Script Links Partial -->
     @Html.Partial("_ScriptLinks")
+    <script>
+        function markAsRead(notificationId) {
+            fetch(`/Notifications/MarkAsRead?id=${notificationId}`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert("Failed to mark the notification as read.");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        }
+
+        function markAllAsRead() {
+            fetch(`/Notifications/MarkAllAsRead`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert("Failed to mark all notifications as read.");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        }
+
+        function clearNotifications() {
+            if (!confirm("Are you sure you want to clear all notifications?")) return;
+
+            fetch(`/Notifications/ClearAll`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert("Failed to clear notifications.");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        }
+    </script>
 </body>
 </html>
