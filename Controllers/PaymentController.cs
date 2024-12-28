@@ -126,5 +126,38 @@ namespace AreEyeP.Controllers
                 return BadRequest(new { success = false, message = "An error occurred while deleting the payment.", error = ex.Message });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDetails(int id)
+        {
+            try
+            {
+                Console.WriteLine("Fetching payment details for ID: " + id);
+                var payment = await _context.Payments.FirstOrDefaultAsync(p => p.Id == id);
+                if (payment == null)
+                {
+                    Console.WriteLine("Payment not found with ID: " + id);
+                    return Json(new { success = false, message = "Payment not found." });
+                }
+
+                // Return payment details
+                return Json(new
+                {
+                    success = true,
+                    application = new
+                    {
+                        paymentMode = payment.PaymentMode,
+                        bankName = payment.BankName,
+                        accountNumber = payment.AccountNumber,
+                        qrCodePath = payment.QrCodePath
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error fetching payment details: " + ex.Message);
+                return Json(new { success = false, message = "An error occurred while fetching payment details.", error = ex.Message });
+            }
+        }
     }
 }
