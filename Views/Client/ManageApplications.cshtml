@@ -210,66 +210,84 @@
             </div>
         </div>
     </div>
-     
 
-    <!-- Modal for Proceed to E-payment -->
+     <!-- Modal for Proceed to E-payment -->
     <div class="modal fade" id="ePaymentModal" tabindex="-1" aria-labelledby="ePaymentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <!-- Use modal-lg for the large payment form -->
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="ePaymentModalLabel">Payment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="ePaymentModalLabel"><i class="fas fa-credit-card"></i> Proceed to E-payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="ePaymentForm">
-                        <div class="mb-3">
-                            <label for="amountToPay" class="form-label">Amount to pay</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="amountToPay" name="amountToPay" placeholder="5000" readonly>
-                                <span class="input-group-text">PHP</span>
+                        <!-- Payment Details Section -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Payment Details</h6>
+                                <dl class="row">
+                                    <dt class="col-sm-5">Amount to Pay:</dt>
+                                    <dd class="col-sm-7">
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="amountToPay" name="amountToPay" readonly>
+                                            <span class="input-group-text">PHP</span>
+                                        </div>
+                                    </dd>
+
+                                    <dt class="col-sm-5">Payment ID:</dt>
+                                    <dd class="col-sm-7" id="paymentId"></dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Payment Method</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="payGCash" value="GCash" required>
+                                    <label class="form-check-label" for="payGCash">Pay with GCash</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="payPayPal" value="PayPal" required>
+                                    <label class="form-check-label" for="payPayPal">Pay with PayPal</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="payMaya" value="PayMaya" required>
+                                    <label class="form-check-label" for="payMaya">Pay with PayMaya</label>
+                                </div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="paymentMethod" class="form-label">Payment Method</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="payGCash" value="GCash" required>
-                                <label class="form-check-label" for="payGCash">Pay with GCash</label>
+
+                        <!-- Account Information Section -->
+                        <h6 class="text-muted">Account Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="accountNumber" class="form-label">Account Number</label>
+                                <input type="text" class="form-control" id="accountNumber" name="accountNumber" placeholder="Enter your account number" required>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="payPayPal" value="PayPal" required>
-                                <label class="form-check-label" for="payPayPal">Pay with PayPal</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="payMaya" value="PayMaya" required>
-                                <label class="form-check-label" for="payMaya">Pay with PayMaya</label>
+                            <div class="col-md-6 mb-3">
+                                <label for="accountName" class="form-label">Account Name</label>
+                                <input type="text" class="form-control" id="accountName" name="accountName" placeholder="Enter your account name" required>
                             </div>
                         </div>
+
+                        <!-- Payment Confirmation Section -->
+                        <h6 class="text-muted">Payment Confirmation</h6>
                         <div class="mb-3">
-                            <label for="accountNumber" class="form-label">Account number</label>
-                            <input type="text" class="form-control" id="accountNumber" name="accountNumber" placeholder="Enter your account number" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="accountName" class="form-label">Account name</label>
-                            <input type="text" class="form-control" id="accountName" name="accountName" placeholder="Enter your account name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="paymentAmount" class="form-label">Payment amount</label>
+                            <label for="paymentAmount" class="form-label">Payment Amount</label>
                             <input type="number" class="form-control" id="paymentAmount" name="paymentAmount" placeholder="Enter amount" required>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="rememberDetails" name="rememberDetails">
-                            <label class="form-check-label" for="rememberDetails">Remember details</label>
+                            <label class="form-check-label" for="rememberDetails">Remember details for future payments</label>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-success">Pay</button>
+                        <div class="modal-footer mt-3">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancel</button>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Pay</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -361,10 +379,28 @@
                 });
             });
 
-            // Handle Add Payment Button
             $('.add-payment-btn').on('click', function () {
-                const applicationId = $(this).data('id');
-                $('#paymentModal').data('application-id', applicationId).modal('show');
+                const paymentId = $(this).data('id');
+
+                $.ajax({
+                    url: '/Payment/GetDetails', // API endpoint to fetch payment details
+                    type: 'GET',
+                    data: { id: paymentId },
+                    success: function (response) {
+                        if (response.success) {
+                            // Populate modal fields with payment details
+                            $('#paymentId').text(response.payment.id);
+                            $('#amountToPay').val(response.payment.amount);
+                        } else {
+                            alert('Failed to load payment details: ' + response.message);
+                        }
+                    },
+                    error: function () {
+                        alert('Error loading payment details.');
+                    }
+                });
+
+                $('#ePaymentModal').modal('show');
             });
 
             // Handle Proceed to E-payment Button
@@ -374,28 +410,39 @@
             });
 
             // Handle Walk-in Payment Submission
-            $('#paymentForm').on('submit', function (e) {
+            $('#ePaymentForm').on('submit', function (e) {
                 e.preventDefault();
-                const formData = new FormData();
-                formData.append('uploadReceipt', $('#uploadReceipt')[0].files[0]);
-                const applicationId = $('#paymentModal').data('application-id');
+
+                const paymentData = {
+                    paymentId: $('#paymentId').text(),
+                    amountToPay: $('#amountToPay').val(),
+                    paymentMethod: $('input[name="paymentMethod"]:checked').val(),
+                    accountNumber: $('#accountNumber').val(),
+                    accountName: $('#accountName').val(),
+                    paymentAmount: $('#paymentAmount').val(),
+                    rememberDetails: $('#rememberDetails').is(':checked')
+                };
+
+                if (!paymentData.paymentMethod || !paymentData.accountNumber || !paymentData.accountName || !paymentData.paymentAmount) {
+                    alert('Please fill in all required fields.');
+                    return;
+                }
 
                 $.ajax({
-                    url: '/BurialApplication/SubmitWalkInPayment',
+                    url: '/Payment/ProcessEPayment', // API endpoint to process payment
                     type: 'POST',
-                    data: formData,
-                    contentType: false,
-                    processData: false,
+                    data: paymentData,
                     success: function (response) {
                         if (response.success) {
-                            alert('Walk-in payment submitted successfully.');
-                            location.reload();
+                            alert('Payment processed successfully.');
+                            $('#ePaymentModal').modal('hide');
+                            location.reload(); // Refresh page to update payment status
                         } else {
-                            alert('Failed to submit walk-in payment: ' + response.message);
+                            alert('Failed to process payment: ' + response.message);
                         }
                     },
                     error: function () {
-                        alert('Error submitting walk-in payment.');
+                        alert('Error processing payment.');
                     }
                 });
             });
