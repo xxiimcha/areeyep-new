@@ -26,7 +26,11 @@
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid px-4">
-                    <h1 class="mt-4">Burial Applications</h1>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="mt-4">Burial Applications</h1>
+                        <!-- Add Manual Renewal Notification Button -->
+                        <button class="btn btn-primary" id="manualRenewalButton" onclick="sendRenewalNotifications()">Send Renewal Notifications</button>
+                    </div>
 
                     <!-- Nav Tabs -->
                     <ul class="nav nav-tabs" id="applicationTabs" role="tablist">
@@ -44,6 +48,7 @@
                         </li>
                     </ul>
 
+                    <!-- Tab Content -->
                     <div class="tab-content mt-4" id="applicationTabsContent">
                         @foreach (var status in new[] { "Pending", "Pending Payment", "Approved", "Declined" })
                         {
@@ -55,9 +60,9 @@
                                             <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th>#</th>
-                                                    <th>Application ID</th> <!-- Add Application ID Column -->
-                                                    <th>Applicant Name</th> <!-- Combine First Name and Last Name -->
-                                                    <th>Deceased Name</th> <!-- Combine First Name and Last Name -->
+                                                    <th>Application ID</th>
+                                                    <th>Applicant Name</th>
+                                                    <th>Deceased Name</th>
                                                     <th>Date of Death</th>
                                                     <th>Date of Burial</th>
                                                     <th>Actions</th>
@@ -70,9 +75,9 @@
                                                     {
                                                         <tr>
                                                             <td>@i</td>
-                                                            <td>@application.ApplicationId</td> <!-- Application ID -->
-                                                            <td>@application.FirstName @application.LastName</td> <!-- Combined First and Last Name -->
-                                                            <td>@application.DeceasedFirstName @application.DeceasedLastName</td> <!-- Combined First and Last Name -->
+                                                            <td>@application.ApplicationId</td>
+                                                            <td>@application.FirstName @application.LastName</td>
+                                                            <td>@application.DeceasedFirstName @application.DeceasedLastName</td>
                                                             <td>@application.DateOfDeath.ToShortDateString()</td>
                                                             <td>@application.DateOfBurial.ToShortDateString()</td>
                                                             <td>
@@ -83,7 +88,6 @@
                                                     }
                                                 }
                                             </tbody>
-
                                         </table>
                                     </div>
                                 }
@@ -433,6 +437,27 @@
                     }
                 })
                 .catch(error => toastr.error('Error:', error));
+        }
+
+        function sendRenewalNotifications() {
+            if (confirm("Are you sure you want to send renewal notifications?")) {
+                fetch('/Renewal/SendRenewalNotifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert("Renewal notifications sent successfully.");
+                    } else {
+                        alert("Failed to send renewal notifications: " + result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error sending renewal notifications:", error);
+                    alert("An error occurred while sending renewal notifications.");
+                });
+            }
         }
     </script>
 </body>
