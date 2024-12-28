@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using AreEyeP.Data; // Ensure this namespace points to your DbContext
-using AreEyeP.Models; // Update this with the correct namespace for your models
+using AreEyeP.Data;
+using AreEyeP.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
@@ -19,158 +19,111 @@ namespace AreEyeP.Controllers
             _context = context;
         }
 
-        // GET: Payment/Index
-        public async Task<IActionResult> Index()
-        {
-            // Fetch the payments from the database
-            var payments = await _context.Payments.ToListAsync();
-            return View(payments); // Pass the payments data to the view
-        }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddPayment(Payment payment, IFormFile QrCode)
+        public async Task<IActionResult> AddPayment([FromForm] Payment payment, [FromForm] IFormFile QrCode)
         {
-            ILogger<PaymentController> logger = HttpContext.RequestServices.GetRequiredService<ILogger<PaymentController>>();
-
             try
             {
-                logger.LogInformation("AddPayment request received.");
+                // Disable validation for QrCodePath
+                ModelState.Remove("QrCodePath");
 
-                // Check ModelState
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors)
-                                                   .Select(e => e.ErrorMessage)
-                                                   .ToList();
-                    logger.LogWarning("Validation failed: {Errors}", string.Join(", ", errors));
-                    return Json(new { success = false, message = "Validation failed.", errors });
+                        .Select(e => e.ErrorMessage).ToList();
+                    Console.WriteLine("Validation failed with errors: " + string.Join(", ", errors));
+                    return BadRequest(new { success = false, message = "Validation failed.", errors });
                 }
 
-                logger.LogInformation("Model state is valid.");
+                // Define upload directory
+                var uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "payment-methods");
 
-                // Process the QR Code
+                // Ensure the directory exists
+                if (!Directory.Exists(uploadDirectory))
+                {
+                    Console.WriteLine("Creating upload directory: " + uploadDirectory);
+                    Directory.CreateDirectory(uploadDirectory);
+                }
+
+                // Handle QR Code file upload if provided
                 if (QrCode != null && QrCode.Length > 0)
                 {
-                    logger.LogInformation("Processing QR Code upload.");
+                    var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(QrCode.FileName)}";
+                    var filePath = Path.Combine(uploadDirectory, uniqueFileName);
 
-                    var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "payment-methods");
-                    if (!Directory.Exists(uploadsDirectory))
-                    {
-                        Directory.CreateDirectory(uploadsDirectory);
-                    }
-
-                    var fileName = $"{Path.GetFileNameWithoutExtension(QrCode.FileName)}_{Guid.NewGuid()}{Path.GetExtension(QrCode.FileName)}";
-                    var filePath = Path.Combine(uploadsDirectory, fileName);
+                    Console.WriteLine("Saving QR Code file to: " + filePath);
 
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await QrCode.CopyToAsync(stream);
                     }
 
-                    payment.QrCodePath = $"/uploads/payment-methods/{fileName}";
+                    if (!System.IO.File.Exists(filePath))
+                    {
+                        Console.WriteLine("File was not saved properly: " + filePath);
+                        return BadRequest(new { success = false, message = "File upload failed." });
+                    }
+
+                    payment.QrCodePath = $"/uploads/payment-methods/{uniqueFileName}";
+                }
+                else
+                {
+                    payment.QrCodePath = null; // Optional if no file is uploaded
                 }
 
-                logger.LogInformation("Saving payment record to the database.");
+                // Save payment record
+                Console.WriteLine("Saving payment details to database...");
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
 
-                logger.LogInformation("Payment record saved successfully with ID {PaymentId}.", payment.Id);
+                Console.WriteLine("Payment details saved successfully with ID: " + payment.Id);
+
                 return Json(new { success = true, message = "Payment details uploaded successfully!" });
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An unexpected error occurred.");
-                return Json(new { success = false, message = "An unexpected error occurred.", error = ex.Message });
+                Console.WriteLine("An error occurred during payment upload: " + ex.Message);
+                return BadRequest(new { success = false, message = "An error occurred while processing the payment.", error = ex.Message });
             }
         }
 
-
-        // POST: Payment/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment != null)
-            {
-                _context.Payments.Remove(payment);
-                await _context.SaveChangesAsync();
-            }
-
-            return Json(new { success = true, message = "Payment record deleted successfully!" });
-        }
-
-        // POST: Payment/UploadReceipt
+        // POST: Payment/Delete
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UploadReceipt(IFormFile uploadReceipt, int applicationId)
+        public async Task<IActionResult> DeletePayment(int id)
         {
-            if (uploadReceipt == null || applicationId <= 0)
-            {
-                return Json(new { success = false, message = "Invalid file or application ID." });
-            }
-
             try
             {
-                // Define the directory to store receipts
-                var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "receipts");
-
-                // Create the directory if it doesn't exist
-                if (!Directory.Exists(uploadsPath))
+                Console.WriteLine("Fetching payment record with ID: " + id);
+                var payment = await _context.Payments.FindAsync(id);
+                if (payment == null)
                 {
-                    Directory.CreateDirectory(uploadsPath);
+                    Console.WriteLine("Payment not found with ID: " + id);
+                    return NotFound(new { success = false, message = "Payment not found." });
                 }
 
-                // Generate a unique file name
-                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(uploadReceipt.FileName)}";
-                var filePath = Path.Combine(uploadsPath, fileName);
-
-                // Save the file
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Remove associated QR Code file if exists
+                if (!string.IsNullOrEmpty(payment.QrCodePath))
                 {
-                    await uploadReceipt.CopyToAsync(stream);
-                }
-
-                // Save the file path to the database
-                var clientPayment = await _context.ClientPayments
-                    .FirstOrDefaultAsync(p => p.ApplicationId == applicationId);
-
-                if (clientPayment == null)
-                {
-                    // Create a new ClientPayment record if it doesn't exist
-                    clientPayment = new ClientPayment
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", payment.QrCodePath.TrimStart('/'));
+                    if (System.IO.File.Exists(filePath))
                     {
-                        ApplicationId = applicationId,
-                        UserId = 0, // Replace with the actual UserId
-                        Amount = 0, // Replace with the payment amount if needed
-                        PaymentMethod = "Walk-in", // Default method for uploading a receipt
-                        Status = "For Review", // Default status for new payments
-                        PaymentDate = DateTime.Now,
-                        ReferenceNumber = null,
-                        ServiceType = "Default", // Replace with the actual service type
-                        ServiceRequestId = 0, // Replace with the actual service request ID
-                        PaymentProof = $"/receipts/{fileName}"
-                    };
-                    _context.ClientPayments.Add(clientPayment);
-                }
-                else
-                {
-                    // Update the existing record
-                    clientPayment.PaymentProof = $"/receipts/{fileName}";
+                        System.IO.File.Delete(filePath);
+                        Console.WriteLine("Deleted QR Code file: " + filePath);
+                    }
                 }
 
+                Console.WriteLine("Removing payment record from database...");
+                _context.Payments.Remove(payment);
                 await _context.SaveChangesAsync();
 
-                return Json(new
-                {
-                    success = true,
-                    message = "Receipt uploaded successfully.",
-                    filePath = $"/receipts/{fileName}"
-                });
+                Console.WriteLine("Payment record deleted successfully.");
+                return Json(new { success = true, message = "Payment deleted successfully!" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
+                Console.WriteLine("Error occurred during DeletePayment: " + ex.Message);
+                return BadRequest(new { success = false, message = "An error occurred while deleting the payment.", error = ex.Message });
             }
         }
     }
