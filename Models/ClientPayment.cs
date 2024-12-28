@@ -38,12 +38,13 @@ namespace AreEyeP.Models
         [StringLength(100, ErrorMessage = "Service type cannot exceed 100 characters.")]
         public string ServiceType { get; set; }
 
-        [Required]
-        public int ServiceRequestId { get; set; } // Link to the ServiceRequest
+        // Made nullable to allow optional linkage to ServiceRequest
+        public int? ServiceRequestId { get; set; } // Nullable ServiceRequest ID
 
-        // Column to store the path to the payment proof
+        // Column to store the path to the payment proof (now nullable)
+        [Column(TypeName = "nvarchar(255)")]
         [StringLength(255, ErrorMessage = "Payment proof path cannot exceed 255 characters.")]
-        public string PaymentProof { get; set; }
+        public string? PaymentProof { get; set; } // Nullable PaymentProof
 
         // Navigation property to link with the BurialApplication entity
         [ForeignKey("ApplicationId")]

@@ -170,7 +170,7 @@
                     @if (ViewBag.UserRole == "LGU")
                     {
                         <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
-                        <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="declineApplication()">Decline</button>
+                        <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="showDeclineReasonModal()">Decline</button>
                         <button id="confirmPaymentButton" class="btn btn-primary" style="display: none;" onclick="completeApplication()">Confirm Payment</button>
                     }
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -208,6 +208,26 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="declineReasonModal" tabindex="-1" aria-labelledby="declineReasonModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="declineReasonModalLabel">Decline Application</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="declineReasonInput" class="form-label">Reason for Declining</label>
+                    <textarea class="form-control" id="declineReasonInput" rows="3" placeholder="Enter the reason for declining"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="confirmDecline()">Submit</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     @Html.Partial("_ScriptLinks")
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
@@ -374,13 +394,27 @@
             $('#paymentModal').modal('hide');
         }
 
-        function declineApplication() {
-            const applicationId = $('#applicationModal').data('applicationId');
-            updateApplicationStatus(applicationId, "Declined");
+        function showDeclineReasonModal() {
+            $('#applicationModal').modal('hide'); // Hide the application modal
+            $('#declineReasonModal').modal('show'); // Show the decline reason modal
         }
 
-        function updateApplicationStatus(id, status, amount = null, terms = null) {
-            const payload = { id: id, status: status, amount: amount, terms: terms };
+        function confirmDecline() {
+            const applicationId = $('#applicationModal').data('applicationId');
+            const reason = document.getElementById('declineReasonInput').value;
+
+            if (!reason.trim()) {
+                alert("Please provide a reason for declining the application.");
+                return;
+            }
+
+            updateApplicationStatus(applicationId, "Declined", null, null, reason);
+
+            $('#declineReasonModal').modal('hide'); // Hide the decline modal
+        }
+
+        function updateApplicationStatus(id, status, amount = null, terms = null, declineReason = null) {
+            const payload = { id: id, status: status, amount: amount, terms: terms, declineReason: declineReason };
 
             fetch(`/Application/UpdateStatus`, {
                 method: 'POST',

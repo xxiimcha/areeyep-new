@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using AreEyeP.Data;
 using System;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 
 namespace AreEyeP.Controllers
 {
@@ -42,23 +41,79 @@ namespace AreEyeP.Controllers
                     application.DateOfRenewal = DateTime.Now.AddYears(model.Terms.Value);
                 }
 
-                // If the status is set to "Pending Payment" and an amount is provided, add a payment record
-                if (model.Status == "Pending Payment" && model.Amount.HasValue)
+                // Handle status-specific logic
+                switch (model.Status)
                 {
-                    var payment = new ClientPayment
-                    {
-                        UserId = application.UserId,               // Link to the user
-                        ApplicationId = application.Id,            // Link to the application
-                        Amount = model.Amount.Value,               // Set the amount
-                        PaymentMethod = "Unspecified",             // Set a default payment method or customize as needed
-                        Status = "Pending",                        // Initial payment status
-                        PaymentDate = DateTime.Now,                // Current date as the payment date
-                        ReferenceNumber = GenerateReferenceNumber(), // Generate a reference number if required
-                        ServiceType = "Burial"
-                    };
+                    case "Declined":
+                        if (!string.IsNullOrEmpty(model.DeclineReason))
+                        {
+                            application.DeclineReason = model.DeclineReason;
 
-                    // Add the payment record to the ClientPayments table
-                    _context.ClientPayments.Add(payment);
+                            // Insert a notification for the client
+                            var declineNotification = new Notification
+                            {
+                                Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been declined. Reason: {model.DeclineReason}",
+                                TargetUser = "client",
+                                UserId = application.UserId, // Reference the user ID who submitted the application
+                                CreatedAt = DateTime.UtcNow,
+                                IsRead = false,
+                                NotificationType = "error",
+                                Type = "Application"
+                            };
+
+                            _context.Notifications.Add(declineNotification);
+                        }
+                        break;
+
+                    case "Approved":
+                        // Insert a notification for the client
+                        var approvedNotification = new Notification
+                        {
+                            Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been approved.",
+                            TargetUser = "client",
+                            UserId = application.UserId, // Reference the user ID who submitted the application
+                            CreatedAt = DateTime.UtcNow,
+                            IsRead = false,
+                            NotificationType = "success",
+                            Type = "Application"
+                        };
+
+                        _context.Notifications.Add(approvedNotification);
+                        break;
+
+                    case "Pending Payment":
+                        if (model.Amount.HasValue)
+                        {
+                            // Add a payment record
+                            var payment = new ClientPayment
+                            {
+                                UserId = application.UserId,               // Link to the user
+                                ApplicationId = application.Id,            // Link to the application
+                                Amount = model.Amount.Value,               // Set the amount
+                                PaymentMethod = "Unspecified",             // Set a default payment method or customize as needed
+                                Status = "Pending",                        // Initial payment status
+                                PaymentDate = DateTime.Now,                // Current date as the payment date
+                                ReferenceNumber = GenerateReferenceNumber(), // Generate a reference number if required
+                                ServiceType = "Burial"
+                            };
+
+                            _context.ClientPayments.Add(payment);
+
+                            // Insert a notification for the client
+                            var paymentNotification = new Notification
+                            {
+                                Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} is now pending payment. Amount due: ₱{model.Amount.Value}.",
+                                TargetUser = "client",
+                                UserId = application.UserId, // Reference the user ID who submitted the application
+                                CreatedAt = DateTime.UtcNow,
+                                IsRead = false,
+                                NotificationType = "info",
+                                Type = "Application"
+                            };
+
+                            _context.Notifications.Add(paymentNotification);
+                        }
+                        break;
                 }
 
                 _context.SaveChanges();
@@ -68,7 +123,6 @@ namespace AreEyeP.Controllers
             return Json(new { success = false, message = "Application not found." });
         }
 
-
         // Model for the status update
         public class UpdateStatusModel
         {
@@ -76,6 +130,7 @@ namespace AreEyeP.Controllers
             public string Status { get; set; }
             public decimal? Amount { get; set; }
             public int? Terms { get; set; } // Nullable integer for Terms
+            public string DeclineReason { get; set; } // Add property for decline reason
         }
 
         // Helper method to generate a unique reference number for payments
@@ -102,6 +157,7 @@ namespace AreEyeP.Controllers
                                           a.Address,
                                           a.Status,
                                           a.AttachmentPath,
+                                          a.DeclineReason, // Include DeclineReason in the response
                                           Payment = _context.ClientPayments
                                               .Where(p => p.ApplicationId == a.Id)
                                               .OrderByDescending(p => p.PaymentDate) // Get the latest payment

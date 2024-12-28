@@ -95,6 +95,9 @@ namespace AreEyeP.Models
         [Display(Name = "Status")]
         public string Status { get; set; } = "Pending";  // Default to "Pending"
 
+        [Display(Name = "Decline Reason")]
+        public string? DeclineReason { get; set; } // Optional property
+
         // Updated Terms column as nullable int
         [Display(Name = "Terms")]
         public int? Terms { get; set; }  // Changed to nullable int
