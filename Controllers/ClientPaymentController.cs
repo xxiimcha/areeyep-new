@@ -60,39 +60,89 @@ namespace AreEyeP.Controllers
             });
         }
 
-        // Process e-payment
         [HttpPost]
-        public async Task<IActionResult> ProcessEPayment([FromForm] EPaymentModel model)
+        public async Task<IActionResult> ProcessEPayment([FromForm] IFormFile paymentProof, [FromForm] EPaymentModel model)
         {
             try
             {
-                if (ModelState.IsValid)
+                if (!ModelState.IsValid)
                 {
-                    // Retrieve payment record
-                    var payment = await _context.ClientPayments.FirstOrDefaultAsync(p => p.Id == model.PaymentId);
-                    if (payment == null)
-                    {
-                        return Json(new { success = false, message = "Payment not found." });
-                    }
-
-                    // Update payment record
-                    payment.Status = "Paid";
-                    payment.PaymentMethod = model.PaymentMethod;
-                    payment.ReferenceNumber = model.ReferenceNumber;
-                    payment.PaymentDate = DateTime.Now;
-                    payment.PaymentProof = model.PaymentProof;
-
-                    _context.ClientPayments.Update(payment);
-                    await _context.SaveChangesAsync();
-
-                    return Json(new { success = true, message = "Payment processed successfully." });
+                    return Json(new { success = false, message = "Invalid input data." });
                 }
 
-                return Json(new { success = false, message = "Invalid input data." });
+                // Validate ReferenceNumber
+                if (string.IsNullOrWhiteSpace(model.ReferenceNumber))
+                {
+                    return Json(new { success = false, message = "Reference Number is required." });
+                }
+
+                // Retrieve payment record using ReferenceNumber
+                var payment = await _context.ClientPayments.FirstOrDefaultAsync(p => p.ReferenceNumber == model.ReferenceNumber);
+                if (payment == null)
+                {
+                    return Json(new { success = false, message = "Payment not found." });
+                }
+
+                // Retrieve the associated burial application using the ApplicationId
+                var burialApplication = await _context.BurialApplications.FirstOrDefaultAsync(b => b.Id == payment.ApplicationId);
+                if (burialApplication == null)
+                {
+                    return Json(new { success = false, message = "Associated burial application not found." });
+                }
+
+                // Handle proof of payment upload
+                if (paymentProof != null && paymentProof.Length > 0)
+                {
+                    try
+                    {
+                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/proofs");
+                        if (!Directory.Exists(uploadsFolder))
+                        {
+                            Directory.CreateDirectory(uploadsFolder);
+                        }
+
+                        var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(paymentProof.FileName);
+                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await paymentProof.CopyToAsync(fileStream);
+                        }
+
+                        payment.PaymentProof = "/uploads/proofs/" + uniqueFileName; // Save path in the database
+                    }
+                    catch (Exception fileEx)
+                    {
+                        return Json(new { success = false, message = "Failed to upload proof of payment.", error = fileEx.Message });
+                    }
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Proof of payment is required." });
+                }
+
+                // Update payment record
+                payment.Status = "For Review";
+                payment.PaymentMethod = model.PaymentMethod ?? "Unspecified";
+                payment.PaymentDate = DateTime.Now;
+
+                // Update the BurialApplications status
+                burialApplication.Status = "Payment for Approval";
+
+                // Save changes to both tables
+                _context.ClientPayments.Update(payment);
+                _context.BurialApplications.Update(burialApplication);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Payment processed and application status updated successfully." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                return Json(new { success = false, message = "Database update failed.", error = dbEx.Message });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error processing payment.", error = ex.Message });
+                return Json(new { success = false, message = "An unexpected error occurred.", error = ex.Message });
             }
         }
 
@@ -164,10 +214,9 @@ namespace AreEyeP.Controllers
         // EPaymentModel definition
         public class EPaymentModel
         {
-            public int PaymentId { get; set; } // ID of the payment record
-            public string PaymentMethod { get; set; } // e.g., GCash, PayPal, PayMaya
-            public string ReferenceNumber { get; set; } // Reference number for the payment
-            public string PaymentProof { get; set; } // Path to the payment proof
+            public string ReferenceNumber { get; set; } // Used instead of PaymentId
+            public string PaymentMethod { get; set; }
+            public IFormFile PaymentProof { get; set; }
         }
     }
 }

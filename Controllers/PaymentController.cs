@@ -160,6 +160,43 @@ namespace AreEyeP.Controllers
             }
         }
 
+        [HttpGet]
+        public JsonResult GetPaymentMethods()
+        {
+            var paymentMethods = _context.Payments
+                .Select(p => new
+                {
+                    p.PaymentMode,
+                    p.QrCodePath,
+                    p.BankName,
+                    p.AccountNumber
+                })
+                .ToList();
+
+            return Json(new { success = true, paymentMethods });
+        }
+
+        [HttpGet]
+        public IActionResult GetClientPaymentDetails(int applicationId)
+        {
+            var paymentDetails = _context.ClientPayments
+                .Where(cp => cp.ApplicationId == applicationId)
+                .Select(cp => new
+                {
+                    amount = cp.Amount,
+                    referenceNumber = cp.ReferenceNumber
+                })
+                .FirstOrDefault();
+
+            if (paymentDetails != null)
+            {
+                return Json(new { success = true, amount = paymentDetails.amount, referenceNumber = paymentDetails.referenceNumber });
+            }
+            else
+            {
+                return Json(new { success = false, message = "Payment details not found." });
+            }
+        }
 
     }
 }
