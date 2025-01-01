@@ -157,18 +157,19 @@ namespace AreEyeP.Controllers
                                           a.Address,
                                           a.Status,
                                           a.AttachmentPath,
-                                          a.DeclineReason, // Include DeclineReason in the response
+                                          a.DeclineReason,
                                           Payment = _context.ClientPayments
                                               .Where(p => p.ApplicationId == a.Id)
-                                              .OrderByDescending(p => p.PaymentDate) // Get the latest payment
+                                              .OrderByDescending(p => p.PaymentDate)
                                               .Select(p => new
                                               {
                                                   p.Amount,
                                                   p.Status,
                                                   PaymentDate = p.PaymentDate.ToString("yyyy-MM-dd"),
-                                                  p.ReferenceNumber
+                                                  p.ReferenceNumber,
+                                                  PaymentProof = p.PaymentProof // Assuming the payment proof image URL is stored here
                                               })
-                                              .FirstOrDefault() // Assuming only one recent payment per application
+                                              .FirstOrDefault()
                                       })
                                       .FirstOrDefault();
 

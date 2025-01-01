@@ -14,6 +14,18 @@
 
     <!-- Include the CSS Links Partial -->
     @Html.Partial("_CSSLinks")
+    <style>
+        .dot-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+    </style>
 </head>
 <body class="sb-nav-fixed">
     <!-- Render the Header Partial -->
@@ -34,23 +46,31 @@
 
                     <!-- Nav Tabs -->
                     <ul class="nav nav-tabs" id="applicationTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">Pending</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="pending-payment-tab" data-bs-toggle="tab" data-bs-target="#pending-payment" type="button" role="tab" aria-controls="pending-payment" aria-selected="false">Pending Payment</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">Approved</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="declined-tab" data-bs-toggle="tab" data-bs-target="#declined" type="button" role="tab" aria-controls="declined" aria-selected="false">Declined</button>
-                        </li>
-                    </ul>
+                        @foreach (var status in new[] { "Pending", "Pending Payment", "Payment for Approval", "Approved", "Declined" })
+                        {
+                            var statusLower = status.ToLower().Replace(" ", "-");
+                            var hasItems = Model.Any(m => m.Status == status) && (status != "Approved" && status != "Declined");
 
-                    <!-- Tab Content -->
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link @(status == "Pending" ? "active" : "")"
+                                        id="@statusLower-tab"
+                                        data-bs-toggle="tab"
+                                        data-bs-target="#@statusLower"
+                                        type="button"
+                                        role="tab"
+                                        aria-controls="@statusLower"
+                                        aria-selected="@(status == "Pending" ? "true" : "false")">
+                                    @status
+                                    @if (hasItems)
+                                    {
+                                        <span class="dot-indicator"></span>
+                                    }
+                                </button>
+                            </li>
+                        }
+                    </ul>
                     <div class="tab-content mt-4" id="applicationTabsContent">
-                        @foreach (var status in new[] { "Pending", "Pending Payment", "Approved", "Declined" })
+                        @foreach (var status in new[] { "Pending", "Pending Payment", "Approved", "Declined", "Payment for Approval" })
                         {
                             <div class="tab-pane fade @(status == "Pending" ? "show active" : "")" id="@status.ToLower().Replace(" ", "-")" role="tabpanel" aria-labelledby="@status.ToLower().Replace(" ", "-")-tab">
                                 @if (Model.Any(m => m.Status == status))
@@ -167,6 +187,36 @@
                                 </table>
                             </div>
                         </div>
+                        <hr />
+                        <h6 class="text-primary mt-4">Payment Information</h6>
+                        <div id="paymentInfoSection" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label><strong>Amount Paid:</strong></label>
+                                    <p id="amountPaid">N/A</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label><strong>Payment Status:</strong></label>
+                                    <p id="paymentStatus">N/A</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label><strong>Payment Date:</strong></label>
+                                    <p id="paymentDate">N/A</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label><strong>Reference Number:</strong></label>
+                                    <p id="referenceNumber">N/A</p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label><strong>Payment Proof:</strong></label>
+                                    <div id="paymentProofContainer" style="text-align: center;">
+                                        <img id="paymentProofImage" src="#" alt="Payment Proof" style="max-width: 100%; max-height: 300px; display: none; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -175,7 +225,7 @@
                     {
                         <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
                         <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="showDeclineReasonModal()">Decline</button>
-                        <button id="confirmPaymentButton" class="btn btn-primary" style="display: none;" onclick="completeApplication()">Confirm Payment</button>
+                        <button id="confirmPaymentButton" class="btn btn-primary" onclick="completeApplication()">Confirm Payment</button>
                     }
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
@@ -237,89 +287,106 @@
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <script>
         $(document).ready(function () {
-            $('#pendingTable, #pendingPaymentTable, #approvedTable, #declinedTable').DataTable(); // Initialize DataTables
+            $('#pendingTable, #pendingPaymentTable, #approvedTable, #declinedTable, #PaymentForApprovalTable').DataTable(); // Include the new table ID
         });
 
         function viewApplication(id) {
-            console.log("Fetching details for application ID:", id); // Log the ID being fetched
+            console.log("Fetching details for application ID:", id);
+
             fetch(`/Application/GetDetails?id=${id}`)
-                .then(response => {
-                    console.log("Response received:", response); // Log the response object
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log("Parsed data:", data); // Log the parsed JSON data
+                    console.log("Parsed data:", data);
+
                     if (data.success) {
                         const application = data.application;
 
-                        // Fill in modal fields with the correct data from the response
-                        document.getElementById("deceasedFirstName").textContent = application.deceasedFirstName;
-                        document.getElementById("deceasedLastName").textContent = application.deceasedLastName;
-                        document.getElementById("address").textContent = application.address;
-                        document.getElementById("causeOfDeath").textContent = application.causeOfDeath;
-                        document.getElementById("dateOfDeath").textContent = application.dateOfDeath;
-                        document.getElementById("dateOfBurial").textContent = application.dateOfBurial;
-                        document.getElementById("religion").textContent = application.religion;
-                        document.getElementById("specialInstructions").textContent = application.specialInstructions;
+                        // Set the application ID in the modal
+                        $('#applicationModal').data('applicationId', id); // Ensure this is set
+                        $('#applicationModal').data('applicationStatus', application.status);
 
-                        // Handle attachments
+                        // Fill in modal fields with data from the response
+                        document.getElementById("deceasedFirstName").textContent = application.deceasedFirstName || "N/A";
+                        document.getElementById("deceasedLastName").textContent = application.deceasedLastName || "N/A";
+                        document.getElementById("address").textContent = application.address || "N/A";
+                        document.getElementById("causeOfDeath").textContent = application.causeOfDeath || "N/A";
+                        document.getElementById("dateOfDeath").textContent = application.dateOfDeath || "N/A";
+                        document.getElementById("dateOfBurial").textContent = application.dateOfBurial || "N/A";
+                        document.getElementById("religion").textContent = application.religion || "N/A";
+                        document.getElementById("specialInstructions").textContent = application.specialInstructions || "N/A";
+
+                        // Attachments handling
                         const attachmentsList = document.getElementById("attachmentsList");
-                        attachmentsList.innerHTML = ""; // Clear previous attachments
+                        attachmentsList.innerHTML = "";
 
                         if (application.attachmentPath) {
-                            const attachments = application.attachmentPath.split(","); // Split by commas
+                            const attachments = application.attachmentPath.split(",");
                             attachments.forEach((file, index) => {
-                                const fileName = file.substring(file.lastIndexOf("/") + 1); // Extract file name
-                                const row = `
-                                    <tr>
+                                const fileName = file.substring(file.lastIndexOf("/") + 1);
+                                attachmentsList.insertAdjacentHTML(
+                                    "beforeend",
+                                    `<tr>
                                         <td>${index + 1}</td>
                                         <td>${fileName}</td>
                                         <td><a href="${file}" target="_blank" class="btn btn-primary btn-sm">View</a></td>
-                                    </tr>`;
-                                attachmentsList.insertAdjacentHTML("beforeend", row);
+                                    </tr>`
+                                );
                             });
                         } else {
-                            attachmentsList.insertAdjacentHTML("beforeend", `<tr><td colspan="3" class="text-center">No attachments found</td></tr>`);
+                            attachmentsList.insertAdjacentHTML(
+                                "beforeend",
+                                `<tr><td colspan="3" class="text-center">No attachments found</td></tr>`
+                            );
                         }
 
-                        // Store the application ID and status in the modal for use when approving/declining/confirming
-                        $('#applicationModal').data('applicationId', id);
-                        $('#applicationModal').data('applicationStatus', application.status);
+                        // Payment Information
+                        const paymentInfoSection = document.getElementById("paymentInfoSection");
+                        const paymentProofImage = document.getElementById("paymentProofImage");
 
-                        // Hide all buttons initially
+                        if (paymentInfoSection) {
+                            if (application.payment) {
+                                paymentInfoSection.style.display = "block";
+                                document.getElementById("amountPaid").textContent = application.payment.amount || "N/A";
+                                document.getElementById("paymentStatus").textContent = application.payment.status || "N/A";
+                                document.getElementById("paymentDate").textContent =
+                                    application.payment.paymentDate
+                                        ? new Date(application.payment.paymentDate).toLocaleDateString()
+                                        : "N/A";
+                                document.getElementById("referenceNumber").textContent = application.payment.referenceNumber || "N/A";
+
+                                if (application.payment.paymentProof) {
+                                    paymentProofImage.src = application.payment.paymentProof;
+                                    paymentProofImage.style.display = "block";
+                                } else {
+                                    paymentProofImage.style.display = "none";
+                                }
+                            } else {
+                                paymentInfoSection.style.display = "none";
+                            }
+                        }
+
+                        // Button visibility
                         $('#approveButton').hide();
                         $('#declineButton').hide();
                         $('#confirmPaymentButton').hide();
 
-                        // Show the appropriate buttons based on the application status
                         if (application.status === "Pending") {
                             $('#approveButton').show();
                             $('#declineButton').show();
-                        } else if (application.status === "Pending Payment") {
+                        } else if (application.status === "Payment for Approval") {
                             $('#confirmPaymentButton').show();
-                        }
-
-                        const paymentInfoSection = document.getElementById("paymentInfoSection");
-                        const payment = application.payment; // Access the payment object within application
-                        if (payment && payment.amount) {
-                            paymentInfoSection.style.display = "block";
-                            document.getElementById("amountPaid").textContent = payment.amount || "N/A";
-                            document.getElementById("paymentStatus").textContent = payment.status || "N/A";
-                            document.getElementById("paymentDate").textContent = new Date(payment.paymentDate).toLocaleDateString() || "N/A";
-                            document.getElementById("referenceNumber").textContent = payment.referenceNumber || "N/A";
-                        } else {
-                            paymentInfoSection.style.display = "none";
                         }
 
                         // Show the modal
                         $('#applicationModal').modal('show');
                     } else {
-                        console.error("Failed to load application details:", data.message);
                         alert("Failed to load application details.");
+                        console.error("Error:", data.message);
                     }
                 })
                 .catch(error => {
-                    console.error("Error fetching application details:", error);
+                    alert("Error fetching application details.");
+                    console.error("Fetch error:", error);
                 });
         }
 
@@ -361,6 +428,12 @@
 
         function approveApplication() {
             const applicationId = $('#applicationModal').data('applicationId');
+            console.log("Setting application ID for payment modal:", applicationId); // Debug log
+
+            if (!applicationId) {
+                console.error("Application ID is missing when opening payment modal.");
+                return;
+            }
 
             // Hide the details modal before showing the payment modal
             $('#applicationModal').modal('hide');
@@ -378,6 +451,8 @@
 
         function confirmPayment() {
             const applicationId = $('#paymentModal').data('applicationId');
+            console.log("Confirm Payment clicked. Application ID:", applicationId); // Log the application ID
+
             const amount = document.getElementById('paymentAmountInput').value;
             const terms = document.getElementById('renewalTermsInput').value;
 
