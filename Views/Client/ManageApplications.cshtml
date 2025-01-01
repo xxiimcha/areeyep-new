@@ -85,7 +85,7 @@
                                                     </td>
                                                     <td>
                                                         <button class="btn btn-primary btn-sm view-btn" data-id="@application.Id">View</button>
-                                                        @if (application.Status != "Approved" || application.Status != "Cancelled" || application.Status == "Declined")
+                                                        @if (application.Status != "Approved" || application.Status != "Canceled" || application.Status == "Declined")
                                                         {
                                                             <button class="btn btn-danger btn-sm cancel-btn" data-id="@application.Id">Cancel</button>
                                                         }
