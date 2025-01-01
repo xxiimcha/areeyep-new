@@ -102,14 +102,7 @@
                                             <label for="qrCode" class="form-label">QR Code</label>
                                             <input type="file" id="qrCode" name="QrCode" class="form-control" required>
                                         </div>
-                                        <!-- Progress bar -->
-                                        <div class="mb-3">
-                                            <label class="form-label">Upload Progress</label>
-                                            <div class="progress">
-                                                <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
-                                            </div>
-                                        </div>
-                                        <button type="button" id="submitBtn" class="btn btn-primary" onclick="addPayment()" disabled>Submit</button>
+                                        <button type="button" id="submitBtn" class="btn btn-primary" onclick="addPayment()">Submit</button>
                                     </form>
                                 </div>
                             </div>
@@ -190,7 +183,6 @@
         function addPayment() {
             const form = document.getElementById("addPaymentForm");
             const formData = new FormData(form);
-            const progressBar = document.getElementById("uploadProgress");
             const submitBtn = document.getElementById("submitBtn");
 
             submitBtn.disabled = true;
