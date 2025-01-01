@@ -21,13 +21,42 @@ namespace AreEyeP.Controllers
         [HttpGet]
         public async Task<IActionResult> GetDetails(int id)
         {
-            var payment = await _context.Payments.FindAsync(id);
+            var payment = await _context.ClientPayments
+                .Include(p => p.BurialApplication) // Include related BurialApplication details
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (payment == null)
             {
                 return Json(new { success = false, message = "Payment not found." });
             }
 
-            return Json(new { success = true, payment });
+            return Json(new
+            {
+                success = true,
+                payment = new
+                {
+                    payment.Id,
+                    payment.UserId,
+                    payment.ApplicationId,
+                    payment.Amount,
+                    payment.PaymentMethod,
+                    payment.Status,
+                    PaymentDate = payment.PaymentDate.ToString("yyyy-MM-dd"),
+                    payment.ReferenceNumber,
+                    payment.ServiceType,
+                    payment.ServiceRequestId,
+                    payment.PaymentProof,
+                    BurialApplication = new
+                    {
+                        payment.BurialApplication?.DeceasedFirstName,
+                        payment.BurialApplication?.DeceasedLastName,
+                        payment.BurialApplication?.RelationshipToDeceased,
+                        payment.BurialApplication?.DateOfBurial,
+                        payment.BurialApplication?.StartTime,
+                        payment.BurialApplication?.EndTime
+                    }
+                }
+            });
         }
 
         // Process e-payment
@@ -39,7 +68,7 @@ namespace AreEyeP.Controllers
                 if (ModelState.IsValid)
                 {
                     // Retrieve payment record
-                    var payment = await _context.Payments.FindAsync(model.PaymentId);
+                    var payment = await _context.ClientPayments.FirstOrDefaultAsync(p => p.Id == model.PaymentId);
                     if (payment == null)
                     {
                         return Json(new { success = false, message = "Payment not found." });
@@ -48,11 +77,11 @@ namespace AreEyeP.Controllers
                     // Update payment record
                     payment.Status = "Paid";
                     payment.PaymentMethod = model.PaymentMethod;
-                    payment.AccountNumber = model.AccountNumber;
-                    payment.AccountName = model.AccountName;
-                    payment.AmountPaid = model.PaymentAmount;
+                    payment.ReferenceNumber = model.ReferenceNumber;
+                    payment.PaymentDate = DateTime.Now;
+                    payment.PaymentProof = model.PaymentProof;
 
-                    _context.Payments.Update(payment);
+                    _context.ClientPayments.Update(payment);
                     await _context.SaveChangesAsync();
 
                     return Json(new { success = true, message = "Payment processed successfully." });
@@ -64,6 +93,15 @@ namespace AreEyeP.Controllers
             {
                 return Json(new { success = false, message = "Error processing payment.", error = ex.Message });
             }
+        }
+
+        // EPaymentModel definition
+        public class EPaymentModel
+        {
+            public int PaymentId { get; set; } // ID of the payment record
+            public string PaymentMethod { get; set; } // e.g., GCash, PayPal, PayMaya
+            public string ReferenceNumber { get; set; } // Reference number for the payment
+            public string PaymentProof { get; set; } // Path to the payment proof
         }
     }
 }

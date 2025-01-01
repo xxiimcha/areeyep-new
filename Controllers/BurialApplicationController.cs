@@ -283,5 +283,20 @@ namespace AreEyeP.Controllers
 
             return NotFound("The application to delete was not found.");
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var application = await _context.BurialApplications.FindAsync(id);
+            if (application == null)
+            {
+                return Json(new { success = false, message = "Application not found." });
+            }
+
+            application.Status = "Canceled";
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Application canceled successfully." });
+        }
+
     }
 }
