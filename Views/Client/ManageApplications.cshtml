@@ -66,13 +66,17 @@
                                                         {
                                                             <span class="badge bg-success">Approved</span>
                                                         }
-                                                        else if (application.Status == "Rejected")
+                                                        else if (application.Status == "Declined")
                                                         {
                                                             <span class="badge bg-danger">Rejected</span>
                                                         }
                                                         else if (application.Status == "Canceled")
                                                         {
                                                             <span class="badge bg-secondary">Canceled</span>
+                                                        }
+                                                        else if (application.Status == "Pending Payment")
+                                                        {
+                                                            <span class="badge bg-info">Pending Payment</span>
                                                         }
                                                         else
                                                         {
@@ -81,7 +85,7 @@
                                                     </td>
                                                     <td>
                                                         <button class="btn btn-primary btn-sm view-btn" data-id="@application.Id">View</button>
-                                                        @if (application.Status != "Approved")
+                                                        @if (application.Status != "Approved" || application.Status != "Declined")
                                                         {
                                                             <button class="btn btn-danger btn-sm cancel-btn" data-id="@application.Id">Cancel</button>
                                                         }
