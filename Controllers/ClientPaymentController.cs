@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using System.IO;
 
 namespace AreEyeP.Controllers
 {
@@ -92,6 +93,71 @@ namespace AreEyeP.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Error processing payment.", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UploadReceipt([FromForm] IFormFile uploadReceipt, [FromForm] int burialId)
+        {
+            try
+            {
+                // Validate receipt file
+                if (uploadReceipt == null || uploadReceipt.Length == 0)
+                {
+                    return Json(new { success = false, message = "No receipt file uploaded." });
+                }
+
+                Console.WriteLine($"Received BurialApplication ID: {burialId}");
+
+                // Retrieve the burial application by Id
+                var burialApplication = await _context.BurialApplications
+                    .FirstOrDefaultAsync(b => b.Id == burialId);
+
+                if (burialApplication == null)
+                {
+                    return Json(new { success = false, message = "Burial application not found." });
+                }
+
+                // Retrieve the associated client payment using ApplicationId from BurialApplication
+                var clientPayment = await _context.ClientPayments
+                    .FirstOrDefaultAsync(p => p.ApplicationId == burialApplication.Id);
+
+                if (clientPayment == null)
+                {
+                    return Json(new { success = false, message = "Client payment record not found." });
+                }
+
+                // Save the uploaded receipt to a directory
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/receipts");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(uploadReceipt.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadReceipt.CopyToAsync(fileStream);
+                }
+
+                // Update the ClientPayment record
+                clientPayment.PaymentProof = "/uploads/receipts/" + uniqueFileName;
+                clientPayment.PaymentMethod = "Walk-in";
+                clientPayment.Status = "For Review";
+
+                // Update the BurialApplication status
+                burialApplication.Status = "Payment for Approval";
+
+                // Save changes
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Receipt uploaded successfully and statuses updated." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error uploading receipt.", error = ex.Message });
             }
         }
 
