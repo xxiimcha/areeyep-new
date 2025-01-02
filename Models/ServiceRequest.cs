@@ -49,5 +49,8 @@ namespace AreEyeP.Models
 
         [Required]
         public bool PaymentRequired { get; set; } = false; // Default value
+
+        // New Field: Payment Option (downPayment or fullPayment)
+        public string PaymentOption { get; set; } = "N/A"; // Default value
     }
 }

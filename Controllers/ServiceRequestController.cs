@@ -76,12 +76,12 @@ namespace AreEyeP.Controllers
 
         [HttpPost]
         public async Task<IActionResult> AssignStaffAndSavePayment(
-    int serviceRequestId,
-    string staffName,
-    string staffContact,
-    bool isPaymentRequired,
-    string paymentOption,
-    decimal? amountToBePaid)
+        int serviceRequestId,
+        string staffName,
+        string staffContact,
+        bool isPaymentRequired,
+        string paymentOption,
+        decimal? amountToBePaid)
         {
             try
             {
@@ -111,6 +111,10 @@ namespace AreEyeP.Controllers
                         return Json(new { success = false, message = "Invalid payment amount. Please provide a valid amount." });
                     }
 
+                    // Update Amount and PaymentOption fields in ServiceRequest
+                    serviceRequest.Amount = amountToBePaid.Value;
+                    serviceRequest.PaymentOption = paymentOption == "downPayment" ? "Down Payment" : "Full Payment";
+
                     var payment = new ClientPayment
                     {
                         UserId = serviceRequest.UserId,
@@ -125,6 +129,12 @@ namespace AreEyeP.Controllers
                     };
 
                     _context.ClientPayments.Add(payment);
+                }
+                else
+                {
+                    // Ensure PaymentOption is reset if PaymentRequired is false
+                    serviceRequest.PaymentOption = "N/A";
+                    serviceRequest.Amount = 0; // Reset amount
                 }
 
                 // Add notifications for client
@@ -153,6 +163,5 @@ namespace AreEyeP.Controllers
                 return Json(new { success = false, message = "An error occurred while processing the request.", error = ex.Message });
             }
         }
-
     }
 }
