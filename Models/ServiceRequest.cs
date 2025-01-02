@@ -15,40 +15,39 @@ namespace AreEyeP.Models
         public DateTime DateOfService { get; set; }
 
         [Required]
-        public string ServiceType { get; set; }
+        public string ServiceType { get; set; } = "Unknown Service Type"; // Default value
 
         [Required]
-        public string UrgencyLevel { get; set; }
+        public string UrgencyLevel { get; set; } = "Low"; // Default value
 
-        public string SpecialInstructions { get; set; }
-
-        [Required]
-        public string Staff { get; set; } = "Unassigned";
+        public string SpecialInstructions { get; set; } = "None"; // Default value
 
         [Required]
-        public string Status { get; set; } = "Pending";
+        public string Staff { get; set; } = "Unassigned"; // Default value
 
         [Required]
-        public TimeSpan StartTime { get; set; } = TimeSpan.FromHours(9);
+        public string Status { get; set; } = "Pending"; // Default value
 
         [Required]
-        public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(17);
+        public TimeSpan StartTime { get; set; } = TimeSpan.FromHours(9); // Default value
 
-        public decimal? Amount { get; set; }
+        [Required]
+        public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(17); // Default value
+
+        public decimal? Amount { get; set; } = 0; // Default value
 
         [Required]
         public int UserId { get; set; }
 
         [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Default value
 
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; } = null; // Allow null initially
 
-        // StaffContact is optional; no [Required] attribute.
-        public string StaffContact { get; set; }
+        // StaffContact is optional; set a default value
+        public string StaffContact { get; set; } = "N/A"; // Default value
 
         [Required]
-        public bool PaymentRequired { get; set; } = false;
+        public bool PaymentRequired { get; set; } = false; // Default value
     }
-
 }

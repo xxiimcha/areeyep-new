@@ -11,7 +11,7 @@ namespace AreEyeP.Helpers
             var smtpClient = new SmtpClient("smtp.gmail.com")
             {
                 Port = 587, // SMTP port for Gmail
-                Credentials = new System.Net.NetworkCredential("charmaine.l.d.cator@gmail.com", "dtdakgjchcndqudh"), // Replace with your Gmail and App Password
+                Credentials = new System.Net.NetworkCredential("areeyep05@gmail.com", "emretzzeacqyspwx"), // Replace with your Gmail and App Password
                 EnableSsl = true, // Enable SSL for secure communication
             };
 
@@ -20,7 +20,7 @@ namespace AreEyeP.Helpers
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress("charmaine.l.d.cator@gmail.com", "AreEyeP Team"),
+                From = new MailAddress("areeyep05@gmail.com", "AreEyeP Team"),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = true, // Indicates that the body is HTML

@@ -74,73 +74,84 @@ namespace AreEyeP.Controllers
             return Json(new { success = false, message = "Failed to create service request. Invalid data.", errors });
         }
 
-
         [HttpPost]
-        public async Task<IActionResult> AssignStaffAndSavePayment(int serviceRequestId, string staffName, string staffContact, bool isPaymentRequired, string paymentOption, decimal? amountToBePaid)
+        public async Task<IActionResult> AssignStaffAndSavePayment(
+    int serviceRequestId,
+    string staffName,
+    string staffContact,
+    bool isPaymentRequired,
+    string paymentOption,
+    decimal? amountToBePaid)
         {
-            // Find the existing service request
-            var serviceRequest = await _context.ServiceRequests.FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
-            if (serviceRequest == null)
+            try
             {
-                return Json(new { success = false, message = "Service request not found." });
-            }
+                // Fetch the service request and handle null values
+                var serviceRequest = await _context.ServiceRequests
+                    .FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
 
-            // Update the service request with staff information
-            serviceRequest.Staff = staffName;
-            serviceRequest.StaffContact = staffContact;
-            serviceRequest.Status = "Assigned";
-            serviceRequest.UpdatedAt = DateTime.UtcNow;
-            serviceRequest.PaymentRequired = isPaymentRequired; // Assign the boolean value directly
-
-            // Insert a notification for the client about the assigned staff
-            var clientNotification = new Notification
-            {
-                Message = $"Staff {staffName} has been assigned to your service request (ID: {serviceRequestId}).",
-                TargetUser = "client",
-                UserId = serviceRequest.UserId, // Attach the client user ID
-                CreatedAt = DateTime.UtcNow,
-                IsRead = false,
-                NotificationType = "info",
-                Type = "Service Request"
-            };
-            _context.Notifications.Add(clientNotification);
-
-            // If payment is required, create a new payment entry
-            if (isPaymentRequired && amountToBePaid.HasValue)
-            {
-                var payment = new ClientPayment
+                if (serviceRequest == null)
                 {
-                    UserId = serviceRequest.UserId,
-                    ApplicationId = serviceRequest.Id, // Assuming ApplicationId is the same as service request Id in this context
-                    ServiceRequestId = serviceRequest.Id,
-                    Amount = amountToBePaid.Value,
-                    PaymentMethod = paymentOption == "downPayment" ? "Down Payment" : "Full Payment",
-                    Status = "Pending",
-                    PaymentDate = DateTime.UtcNow,
-                    ServiceType = serviceRequest.ServiceType,
-                    ReferenceNumber = "" // Set a default value or generate a reference number here
-                };
+                    return Json(new { success = false, message = "Service request not found." });
+                }
 
-                _context.ClientPayments.Add(payment);
+                // Handle nullable fields
+                serviceRequest.Staff = string.IsNullOrWhiteSpace(staffName) ? "Unassigned" : staffName;
+                serviceRequest.StaffContact = string.IsNullOrWhiteSpace(staffContact) ? "N/A" : staffContact;
+                serviceRequest.ServiceType ??= "Unknown Service Type";
 
-                // Insert a notification for the client about the payment
-                var paymentNotification = new Notification
+                // Update service request fields
+                serviceRequest.Status = "Assigned";
+                serviceRequest.UpdatedAt = DateTime.UtcNow;
+
+                // Handle payment details
+                if (isPaymentRequired)
                 {
-                    Message = $"Your service request requires a payment of {amountToBePaid.Value:C}. Please proceed with the payment.",
+                    if (!amountToBePaid.HasValue || amountToBePaid.Value <= 0)
+                    {
+                        return Json(new { success = false, message = "Invalid payment amount. Please provide a valid amount." });
+                    }
+
+                    var payment = new ClientPayment
+                    {
+                        UserId = serviceRequest.UserId,
+                        ApplicationId = serviceRequest.Id,
+                        ServiceRequestId = serviceRequest.Id,
+                        Amount = amountToBePaid.Value,
+                        PaymentMethod = paymentOption == "downPayment" ? "Down Payment" : "Full Payment",
+                        Status = "Pending",
+                        PaymentDate = DateTime.UtcNow,
+                        ServiceType = serviceRequest.ServiceType,
+                        ReferenceNumber = Guid.NewGuid().ToString() // Generate unique reference number
+                    };
+
+                    _context.ClientPayments.Add(payment);
+                }
+
+                // Add notifications for client
+                var assignmentNotification = new Notification
+                {
+                    Message = $"Staff {serviceRequest.Staff} has been assigned to your service request (ID: {serviceRequestId}).",
                     TargetUser = "client",
-                    UserId = serviceRequest.UserId, // Attach the client user ID
+                    UserId = serviceRequest.UserId,
                     CreatedAt = DateTime.UtcNow,
                     IsRead = false,
                     NotificationType = "info",
-                    Type = "Payment"
+                    Type = "Service Request"
                 };
-                _context.Notifications.Add(paymentNotification);
+
+                _context.Notifications.Add(assignmentNotification);
+
+                // Save changes
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Staff assigned and payment details saved successfully." });
             }
-
-            // Save the changes to the database
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true, message = "Staff assigned and client notified. Payment details saved successfully." });
+            catch (Exception ex)
+            {
+                // Log the exception for debugging
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while processing the request.", error = ex.Message });
+            }
         }
 
     }
