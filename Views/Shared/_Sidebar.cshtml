@@ -1,23 +1,43 @@
 ﻿@using Microsoft.AspNetCore.Http
+@inject AreEyeP.Data.ApplicationDbContext _context // Inject the DbContext for querying the database
 @{
-    // Fetch the user's role from the session
+    // Fetch the user's role and ID from the session
     var userRole = Context.Session.GetString("UserRole");
+    var userId = Context.Session.GetInt32("UserId"); // Assuming UserId is stored as an integer in the session
     var userName = Context.Session.GetString("UserName");
+    var notificationCount = 0;
+
+    if (!string.IsNullOrEmpty(userRole))
+    {
+        if (userRole.ToLower() == "client")
+        {
+            // Count notifications where TargetUser matches the logged-in client and isRead = 0
+            notificationCount = _context.Notifications
+                .Where(n => n.TargetUser.ToLower() == "client" && n.UserId == userId && !n.IsRead)
+                .Count();
+        }
+        else if (userRole.ToLower() == "staff" || userRole.ToLower() == "lgu")
+        {
+            // Count notifications where TargetUser matches Staff or LGU and isRead = 0
+            notificationCount = _context.Notifications
+                .Where(n => n.TargetUser.ToLower() == userRole.ToLower() && !n.IsRead)
+                .Count();
+        }
+    }
 }
 <div id="layoutSidenav_nav">
     <nav class="sb-sidenav accordion sb-sidenav-dark bg-success" id="sidenavAccordion">
-        <!-- Changed background color to green -->
         <div class="sb-sidenav-menu">
             <div class="nav" style="color: white;">
                 <!-- User Information Section -->
                 <div class="text-center mt-3 mb-3">
-                    <h5 class="text-white">@userName</h5> <!-- Static Name -->
-                    <p class="text-white mb-0"> @char.ToUpper(userRole[0])@userRole.Substring(1)</p>
+                    <h5 class="text-white">@userName</h5>
+                    <p class="text-white mb-0">@char.ToUpper(userRole[0])@userRole.Substring(1)</p>
                 </div>
                 <hr style="border-color: white;" />
 
                 <!-- Admin Role Sidebar Menu -->
-                @if (userRole == "admin")
+                @if (userRole.ToLower() == "admin")
                 {
                     <a class="nav-link text-white" href="/Admin/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
@@ -30,7 +50,7 @@
                 }
 
                 <!-- Staff Role Sidebar Menu -->
-                @if (userRole == "Staff")
+                @if (userRole.ToLower() == "staff")
                 {
                     <a class="nav-link text-white" href="/Staff/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
@@ -51,7 +71,7 @@
                 }
 
                 <!-- LGU Role Sidebar Menu -->
-                @if (userRole == "lgu" || userRole == "LGU")
+                @if (userRole.ToLower() == "lgu")
                 {
                     <a class="nav-link text-white" href="/LGU/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
@@ -76,7 +96,7 @@
                 }
 
                 <!-- Client Role Sidebar Menu -->
-                @if (userRole == "client")
+                @if (userRole.ToLower() == "client")
                 {
                     <a class="nav-link text-white" href="/Client/Dashboard">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-home"></i></div>
@@ -112,24 +132,20 @@
                             <a class="nav-link text-white" href="/Client/ServiceRequest/Create">Create New</a>
                         </nav>
                     </div>
-
-                    <!--<a class="nav-link text-white" href="/Client/Renewals">
-                        <div class="sb-nav-link-icon text-white"><i class="fas fa-clock"></i></div>
-                        Renewals
-                    </a>-->
                     <a class="nav-link text-white" href="/Client/PaymentHistory">
                         <div class="sb-nav-link-icon text-white"><i class="fas fa-money-bill-wave"></i></div>
                         Payments
                     </a>
                 }
-                <a class="nav-link text-white" href="/Staff/Profile">
-                    <div class="sb-nav-link-icon text-white"><i class="fas fa-user"></i></div>
-                    Manage Profile
-                </a>
-                <!-- Ensuring the text remains white -->
+
+                <!-- Notifications nav item -->
                 <a class="nav-link text-white" href="/Notifications">
                     <div class="sb-nav-link-icon text-white"><i class="fas fa-bell"></i></div>
                     Notifications
+                    @if (notificationCount > 0)
+                    {
+                        <span class="badge bg-danger ms-2">@notificationCount</span>
+                    }
                 </a>
             </div>
         </div>
