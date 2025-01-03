@@ -75,93 +75,60 @@ namespace AreEyeP.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AssignStaffAndSavePayment(
-        int serviceRequestId,
-        string staffName,
-        string staffContact,
-        bool isPaymentRequired,
-        string paymentOption,
-        decimal? amountToBePaid)
+        public async Task<IActionResult> MakePayment(int serviceRequestId, decimal amount, string paymentMethod, IFormFile paymentProof)
         {
             try
             {
-                // Fetch the service request and handle null values
-                var serviceRequest = await _context.ServiceRequests
-                    .FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
+                var serviceRequest = await _context.ServiceRequests.FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
 
-                if (serviceRequest == null)
+                if (serviceRequest == null || !serviceRequest.PaymentRequired)
                 {
-                    return Json(new { success = false, message = "Service request not found." });
+                    return Json(new { success = false, message = "Invalid service request or payment is not required." });
                 }
 
-                // Handle nullable fields
-                serviceRequest.Staff = string.IsNullOrWhiteSpace(staffName) ? "Unassigned" : staffName;
-                serviceRequest.StaffContact = string.IsNullOrWhiteSpace(staffContact) ? "N/A" : staffContact;
-                serviceRequest.ServiceType ??= "Unknown Service Type";
-
-                // Update service request fields
-                serviceRequest.Status = "Assigned";
-                serviceRequest.UpdatedAt = DateTime.UtcNow;
-
-                // Handle payment details
-                if (isPaymentRequired)
+                // Save the payment proof file
+                string proofPath = null;
+                if (paymentProof != null)
                 {
-                    if (!amountToBePaid.HasValue || amountToBePaid.Value <= 0)
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
+                    if (!Directory.Exists(uploadsFolder))
                     {
-                        return Json(new { success = false, message = "Invalid payment amount. Please provide a valid amount." });
+                        Directory.CreateDirectory(uploadsFolder);
                     }
 
-                    // Update Amount and PaymentOption fields in ServiceRequest
-                    serviceRequest.Amount = amountToBePaid.Value;
-                    serviceRequest.PaymentOption = paymentOption == "downPayment" ? "Down Payment" : "Full Payment";
-
-                    var payment = new ClientPayment
+                    proofPath = Path.Combine(uploadsFolder, paymentProof.FileName);
+                    using (var stream = new FileStream(proofPath, FileMode.Create))
                     {
-                        UserId = serviceRequest.UserId,
-                        ApplicationId = serviceRequest.Id,
-                        ServiceRequestId = serviceRequest.Id,
-                        Amount = amountToBePaid.Value,
-                        PaymentMethod = paymentOption == "downPayment" ? "Down Payment" : "Full Payment",
-                        Status = "Pending",
-                        PaymentDate = DateTime.UtcNow,
-                        ServiceType = serviceRequest.ServiceType,
-                        ReferenceNumber = Guid.NewGuid().ToString() // Generate unique reference number
-                    };
-
-                    _context.ClientPayments.Add(payment);
-                }
-                else
-                {
-                    // Ensure PaymentOption is reset if PaymentRequired is false
-                    serviceRequest.PaymentOption = "N/A";
-                    serviceRequest.Amount = 0; // Reset amount
+                        await paymentProof.CopyToAsync(stream);
+                    }
                 }
 
-                // Add notifications for client
-                var assignmentNotification = new Notification
+                var payment = new ClientPayment
                 {
-                    Message = $"Staff {serviceRequest.Staff} has been assigned to your service request (ID: {serviceRequestId}).",
-                    TargetUser = "client",
                     UserId = serviceRequest.UserId,
-                    CreatedAt = DateTime.UtcNow,
-                    IsRead = false,
-                    NotificationType = "info",
-                    Type = "Service Request"
+                    ApplicationId = serviceRequest.Id,
+                    ServiceRequestId = serviceRequest.Id,
+                    Amount = amount,
+                    PaymentMethod = paymentMethod,
+                    Status = "Completed",
+                    PaymentDate = DateTime.UtcNow,
+                    ServiceType = serviceRequest.ServiceType,
+                    ReferenceNumber = Guid.NewGuid().ToString(),
+                    PaymentProof = $"/uploads/{paymentProof.FileName}"
                 };
 
-                _context.Notifications.Add(assignmentNotification);
-
-                // Save changes
+                _context.ClientPayments.Add(payment);
+                serviceRequest.PaymentRequired = false; // Mark as paid
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "Staff assigned and payment details saved successfully." });
+                return Json(new { success = true, message = "Payment successful." });
             }
             catch (Exception ex)
             {
-                // Log the exception for debugging
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                return Json(new { success = false, message = "An error occurred while processing the request.", error = ex.Message });
+                Console.WriteLine($"Error processing payment: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while processing the payment." });
             }
         }
+
     }
 }

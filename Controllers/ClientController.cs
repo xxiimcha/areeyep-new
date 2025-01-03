@@ -247,7 +247,83 @@ namespace AreEyeP.Controllers
                 return Json(new { success = false, message = "An error occurred while fetching the details." });
             }
         }
+        [HttpPost]
+        public async Task<IActionResult> MakePayment(int serviceRequestId, decimal amount, string paymentMethod, IFormFile paymentProof)
+        {
+            try
+            {
+                // Find the service request
+                var serviceRequest = await _context.ServiceRequests.FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
 
+                if (serviceRequest == null || !serviceRequest.PaymentRequired)
+                {
+                    return Json(new { success = false, message = "Invalid service request or payment is not required." });
+                }
+
+                // Find the existing payment record
+                var payment = await _context.ClientPayments.FirstOrDefaultAsync(p => p.ServiceRequestId == serviceRequestId);
+
+                if (payment == null)
+                {
+                    return Json(new { success = false, message = "No existing payment record found for this service request." });
+                }
+
+                // Update the payment record
+                payment.Amount = amount;
+                payment.PaymentMethod = paymentMethod;
+                payment.Status = "Completed";
+                payment.PaymentDate = DateTime.UtcNow;
+
+                // Handle payment proof upload if provided
+                if (paymentProof != null && paymentProof.Length > 0)
+                {
+                    var filePath = Path.Combine("uploads/payment-proofs", Guid.NewGuid() + Path.GetExtension(paymentProof.FileName));
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await paymentProof.CopyToAsync(stream);
+                    }
+                    payment.PaymentProof = filePath; // Save the file path in the database
+                }
+
+                // Update the service request to mark it as paid
+                serviceRequest.PaymentRequired = false;
+
+                // Save changes
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Payment updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating payment: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while updating the payment." });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult GetPaymentMethods()
+        {
+            try
+            {
+                // Fetch payment methods from the Payments table
+                var paymentMethods = _context.Payments
+                    .Select(p => new
+                    {
+                        paymentMode = p.PaymentMode,
+                        qrCodePath = p.QrCodePath,
+                        bankName = p.BankName,
+                        accountNumber = p.AccountNumber
+                    })
+                    .ToList();
+
+                return Json(new { success = true, methods = paymentMethods });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching payment methods: {ex.Message}");
+                return Json(new { success = false, message = "Failed to fetch payment methods." });
+            }
+        }
 
     }
 }

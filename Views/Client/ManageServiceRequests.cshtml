@@ -36,7 +36,7 @@
 
         <div id="layoutSidenav_content">
             <main>
-                <div class="container-fluid px-0">
+                <div class="container-fluid px-4">
                     <h1 class="mt-4">Service Requests</h1>
 
                     <!-- Service Requests Table -->
@@ -70,6 +70,11 @@
                                                 <td>@request.Status</td>
                                                 <td>
                                                     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewServiceRequestModal" onclick="loadServiceRequestDetails(@request.Id)">View</button>
+
+                                                    @if (request.Status.ToLower() == "assigned" && request.PaymentRequired)
+                                                    {
+                                                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#paymentModal" onclick="openPaymentModal(@request.Id, @request.Amount)">Pay</button>
+                                                    }
                                                 </td>
                                             </tr>
                                             i++;
@@ -89,6 +94,46 @@
             </main>
         </div>
     </div>
+
+    <!-- Modal for Payment -->
+    <!-- Modal for Payment -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">Make Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm" action="/Client/MakePayment" method="post" enctype="multipart/form-data">
+                        <input type="hidden" id="ServiceRequestId" name="ServiceRequestId" />
+                        <div class="mb-3">
+                            <label for="Amount" class="form-label">Amount</label>
+                            <input type="text" class="form-control" id="Amount" name="Amount" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label for="PaymentMethod" class="form-label">Payment Method</label>
+                            <select class="form-select" id="PaymentMethod" name="PaymentMethod" required>
+                                <!-- Options will be dynamically populated -->
+                            </select>
+                        </div>
+                        <div id="paymentDetails" class="mb-3">
+                            <!-- Bank name, account number, and QR code will be dynamically displayed -->
+                        </div>
+                        <div class="mb-3">
+                            <label for="PaymentProof" class="form-label">Upload Payment Proof</label>
+                            <input type="file" class="form-control" id="PaymentProof" name="PaymentProof" required />
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success">Submit Payment</button>
+                            <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Modal for Viewing Service Request -->
     <div class="modal fade" id="viewServiceRequestModal" tabindex="-1" aria-labelledby="viewServiceRequestModalLabel" aria-hidden="true">
@@ -113,6 +158,56 @@
 
     @Html.Partial("_ScriptLinks")
     <script>
+        function openPaymentModal(serviceRequestId, amount) {
+            document.getElementById("ServiceRequestId").value = serviceRequestId;
+            document.getElementById("Amount").value = amount.toFixed(2);
+
+            // Fetch available payment methods dynamically
+            fetch(`/Client/GetPaymentMethods`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const paymentMethodDropdown = document.getElementById("PaymentMethod");
+                        const paymentDetailsDiv = document.getElementById("paymentDetails");
+                        paymentMethodDropdown.innerHTML = ""; // Clear existing options
+                        paymentDetailsDiv.innerHTML = ""; // Clear existing details
+
+                        data.methods.forEach(method => {
+                            const option = document.createElement("option");
+                            option.value = method.paymentMode;
+                            option.textContent = `${method.paymentMode} (${method.bankName || "N/A"})`;
+                            paymentMethodDropdown.appendChild(option);
+                        });
+
+                        // Update payment details when a method is selected
+                        paymentMethodDropdown.addEventListener("change", function () {
+                            const selectedMethod = data.methods.find(
+                                method => method.paymentMode === this.value
+                            );
+
+                            if (selectedMethod) {
+                                paymentDetailsDiv.innerHTML = `
+                                        <p><strong>Bank Name:</strong> ${selectedMethod.bankName || "N/A"}</p>
+                                        <p><strong>Account Number:</strong> ${selectedMethod.accountNumber || "N/A"}</p>
+                                        ${selectedMethod.qrCodePath
+                                        ? `<img src="${selectedMethod.qrCodePath}" alt="QR Code" style="max-width: 200px; max-height: 200px;" />`
+                                        : ""
+                                    }
+                                    `;
+                            } else {
+                                paymentDetailsDiv.innerHTML = "";
+                            }
+                        });
+                    } else {
+                        alert("Failed to load payment methods. Please try again.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching payment methods:", error);
+                    alert("An error occurred while loading payment methods.");
+                });
+        }
+
         // Function to load service request details dynamically
         function loadServiceRequestDetails(id) {
             const modalBody = document.getElementById("serviceRequestDetails");
