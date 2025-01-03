@@ -1,7 +1,7 @@
 ﻿@model Dictionary<string, IEnumerable<AreEyeP.Models.Notification>>
 
 @{
-    Layout = null;  // Not using the _Layout.cshtml file for this specific page
+    Layout = null; // Not using a layout for this specific page
     ViewData["Title"] = "Notifications";
 
     // Determine if there are unread notifications for each category
@@ -17,8 +17,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-
-    <!-- Include the CSS Links Partial -->
     @Html.Partial("_CSSLinks")
     <style>
         .notification-card {
@@ -64,25 +62,20 @@
     </style>
 </head>
 <body class="sb-nav-fixed">
-    <!-- Render the Header Partial -->
     @Html.Partial("_Header")
 
     <div id="layoutSidenav">
-        <!-- Render the Sidebar Partial -->
         @Html.Partial("_Sidebar")
-
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid px-4">
                     <h2 class="text-center mt-4 mb-4">Notifications</h2>
 
-                    <!-- Mark All as Read and Clear All Notifications -->
                     <div class="d-flex justify-content-end mb-3">
                         <button class="btn btn-primary btn-mark-all me-2" onclick="markAllAsRead()">Mark All as Read</button>
                         <button class="btn btn-danger btn-clear-all" onclick="clearNotifications()">Clear All Notifications</button>
                     </div>
 
-                    <!-- Nav Tabs -->
                     <ul class="nav nav-tabs" id="notificationTabs" role="tablist">
                         <li class="nav-item">
                             <a class="nav-link active" id="application-tab" data-bs-toggle="tab" href="#application" role="tab" aria-controls="application" aria-selected="true">
@@ -122,16 +115,25 @@
                         </li>
                     </ul>
 
-                    <!-- Tab Content -->
                     <div class="tab-content" id="notificationTabContent">
                         @foreach (var category in Model)
                         {
-                            <div class="tab-pane fade @(category.Key == "Application" ? "show active" : "")" id="@category.Key.ToLower()" role="tabpanel" aria-labelledby="@category.Key.ToLower()-tab">
-                                @if (category.Value.Any())
+                            // Ensure consistent key and ID formatting
+                            var tabId = category.Key.Replace(" ", "").ToLower();
+
+                            // Set active class dynamically
+                            var isActive = category.Key == "Application" ? "show active" : "";
+
+                            <div class="tab-pane fade @isActive"
+                                 id="@tabId" role="tabpanel"
+                                 aria-labelledby="@tabId-tab">
+
+                                @if (category.Value != null && category.Value.Any())
                                 {
                                     foreach (var notification in category.Value)
                                     {
-                                        <div class="notification-card mt-3 @(notification.IsRead ? "" : "unread")" onclick="markAsRead(@notification.Id)">
+                                        <div class="notification-card mt-3 @(notification.IsRead ? "" : "unread")"
+                                             onclick="markAsRead(@notification.Id)">
                                             <h5>@notification.Type</h5>
                                             <p>@notification.Message</p>
                                             <p class="date">Posted on: @notification.CreatedAt.ToString("MMMM dd, yyyy")</p>
@@ -140,7 +142,7 @@
                                 }
                                 else
                                 {
-                                    <p class="text-center mt-3">No @category.Key.ToLower() notifications found.</p>
+                                    <p class="text-center mt-3">No @category.Key notifications found.</p>
                                 }
                             </div>
                         }
@@ -150,53 +152,27 @@
         </div>
     </div>
 
-    <!-- Include the Script Links Partial -->
     @Html.Partial("_ScriptLinks")
     <script>
         function markAsRead(notificationId) {
-            fetch(`/Notifications/MarkAsRead?id=${notificationId}`, {
-                method: 'POST'
-            })
+            fetch(`/Notifications/MarkAsRead?id=${notificationId}`, { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert("Failed to mark the notification as read.");
-                    }
-                })
+                .then(data => { if (data.success) location.reload(); })
                 .catch(error => console.error("Error:", error));
         }
 
         function markAllAsRead() {
-            fetch(`/Notifications/MarkAllAsRead`, {
-                method: 'POST'
-            })
+            fetch(`/Notifications/MarkAllAsRead`, { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert("Failed to mark all notifications as read.");
-                    }
-                })
+                .then(data => { if (data.success) location.reload(); })
                 .catch(error => console.error("Error:", error));
         }
 
         function clearNotifications() {
             if (!confirm("Are you sure you want to clear all notifications?")) return;
-
-            fetch(`/Notifications/ClearAll`, {
-                method: 'POST'
-            })
+            fetch(`/Notifications/ClearAll`, { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert("Failed to clear notifications.");
-                    }
-                })
+                .then(data => { if (data.success) location.reload(); })
                 .catch(error => console.error("Error:", error));
         }
     </script>

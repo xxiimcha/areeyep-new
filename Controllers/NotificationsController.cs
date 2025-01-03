@@ -20,37 +20,31 @@ namespace AreEyeP.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // Fetch logged-in user's ID and role
             var userId = HttpContext.Session.GetInt32("UserId");
-            var userRole = HttpContext.Session.GetString("UserRole"); // Assuming role is stored in the session
+            var userRole = HttpContext.Session.GetString("UserRole");
 
             if (userId == null || string.IsNullOrEmpty(userRole))
             {
                 return Unauthorized("User is not logged in.");
             }
 
-            // Fetch notifications based on the role
             IQueryable<Notification> notificationsQuery;
 
             if (userRole.ToLower() == "client")
             {
-                // Select notifications targeted to the logged-in client
                 notificationsQuery = _context.Notifications
-                    .Where(n => n.UserId == userId || n.TargetUser == "client")
+                    .Where(n => n.UserId == userId || n.TargetUser.ToLower() == "client")
                     .OrderByDescending(n => n.CreatedAt);
             }
             else
             {
-                // Select notifications targeted for the logged-in user's role
                 notificationsQuery = _context.Notifications
-                    .Where(n => n.TargetUser == userRole.ToLower() || n.TargetUser == null || n.UserId == userId)
+                    .Where(n => n.TargetUser.ToLower() == userRole.ToLower() || n.TargetUser == null || n.UserId == userId)
                     .OrderByDescending(n => n.CreatedAt);
             }
 
-            // Execute the query and fetch results
             var notifications = await notificationsQuery.ToListAsync();
 
-            // Categorize notifications into Application, ServiceRequests, Payments, and Renewals
             var categorizedNotifications = new Dictionary<string, IEnumerable<Notification>>
             {
                 { "Application", notifications.Where(n => n.Type == "Application") },
@@ -59,7 +53,6 @@ namespace AreEyeP.Controllers
                 { "Renewals", notifications.Where(n => n.Type == "Renewals") }
             };
 
-            // Pass the categorized notifications to the view
             return View("~/Views/Shared/Notifications.cshtml", categorizedNotifications);
         }
 
