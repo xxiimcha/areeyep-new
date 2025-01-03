@@ -2,6 +2,8 @@
 using AreEyeP.Data;
 using System.Linq;
 using System.Text;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
 
 namespace AreEyeP.Controllers
 {
@@ -169,5 +171,118 @@ namespace AreEyeP.Controllers
 
             return result;
         }
+        [HttpPost]
+        public async Task<IActionResult> DownloadPDFReport([FromBody] ChartImagesRequest charts)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                Document pdfDoc = new Document(PageSize.A4, 25, 25, 30, 30);
+                PdfWriter writer = PdfWriter.GetInstance(pdfDoc, stream);
+                pdfDoc.Open();
+
+                // Add Title
+                pdfDoc.Add(new Paragraph("LGU Reports"));
+                pdfDoc.Add(new Paragraph($"Generated on: {DateTime.Now.ToString("MMMM dd, yyyy")}"));
+                pdfDoc.Add(new Paragraph(" ")); // Empty line
+
+                // Application Status Section
+                pdfDoc.Add(new Paragraph("Application Status Overview:"));
+                PdfPTable appTable = new PdfPTable(2);
+                appTable.AddCell("Status");
+                appTable.AddCell("Count");
+
+                var applicationStatuses = _context.BurialApplications
+                    .GroupBy(a => a.Status)
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
+                    .ToList();
+
+                foreach (var status in applicationStatuses)
+                {
+                    appTable.AddCell(status.Status);
+                    appTable.AddCell(status.Count.ToString());
+                }
+                pdfDoc.Add(appTable);
+
+                // Add Application Status Chart
+                if (!string.IsNullOrEmpty(charts.ApplicationChart))
+                {
+                    pdfDoc.Add(new Paragraph("\n"));
+                    var appChartBytes = Convert.FromBase64String(charts.ApplicationChart.Split(',')[1]);
+                    Image appChartImage = Image.GetInstance(appChartBytes);
+                    appChartImage.ScaleToFit(500f, 300f);
+                    pdfDoc.Add(appChartImage);
+                }
+
+                // Service Requests Section
+                pdfDoc.Add(new Paragraph("\nService Requests Overview:"));
+                PdfPTable serviceTable = new PdfPTable(2);
+                serviceTable.AddCell("Service Type");
+                serviceTable.AddCell("Count");
+
+                var allServices = _context.Services.Select(s => s.ServiceName).ToList();
+                var serviceRequestCounts = _context.ServiceRequests
+                    .GroupBy(sr => sr.ServiceType)
+                    .Select(g => new { ServiceType = g.Key, Count = g.Count() })
+                    .ToList();
+
+                foreach (var service in allServices)
+                {
+                    var count = serviceRequestCounts.FirstOrDefault(s => s.ServiceType == service)?.Count ?? 0;
+                    serviceTable.AddCell(service);
+                    serviceTable.AddCell(count.ToString());
+                }
+                pdfDoc.Add(serviceTable);
+
+                // Add Service Requests Chart
+                if (!string.IsNullOrEmpty(charts.ServiceChart))
+                {
+                    pdfDoc.Add(new Paragraph("\n"));
+                    var serviceChartBytes = Convert.FromBase64String(charts.ServiceChart.Split(',')[1]);
+                    Image serviceChartImage = Image.GetInstance(serviceChartBytes);
+                    serviceChartImage.ScaleToFit(500f, 300f);
+                    pdfDoc.Add(serviceChartImage);
+                }
+
+                // Payments Section
+                pdfDoc.Add(new Paragraph("\nPayment Overview:"));
+                PdfPTable paymentTable = new PdfPTable(2);
+                paymentTable.AddCell("Service Type");
+                paymentTable.AddCell("Total Amount");
+
+                var paymentsReport = _context.ClientPayments
+                    .GroupBy(p => p.ServiceType)
+                    .Select(g => new { ServiceType = g.Key, TotalAmount = g.Sum(p => p.Amount) })
+                    .ToList();
+
+                foreach (var payment in paymentsReport)
+                {
+                    paymentTable.AddCell(payment.ServiceType);
+                    paymentTable.AddCell(payment.TotalAmount.ToString("C"));
+                }
+                pdfDoc.Add(paymentTable);
+
+                // Add Payments Chart
+                if (!string.IsNullOrEmpty(charts.PaymentChart))
+                {
+                    pdfDoc.Add(new Paragraph("\n"));
+                    var paymentChartBytes = Convert.FromBase64String(charts.PaymentChart.Split(',')[1]);
+                    Image paymentChartImage = Image.GetInstance(paymentChartBytes);
+                    paymentChartImage.ScaleToFit(500f, 300f);
+                    pdfDoc.Add(paymentChartImage);
+                }
+
+                // Close the PDF document
+                pdfDoc.Close();
+                return File(stream.ToArray(), "application/pdf", "LGU_Report.pdf");
+            }
+        }
+
+        public class ChartImagesRequest
+        {
+            public string ApplicationChart { get; set; }
+            public string ServiceChart { get; set; }
+            public string PaymentChart { get; set; }
+        }
+
     }
 }

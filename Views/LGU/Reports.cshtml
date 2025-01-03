@@ -39,11 +39,16 @@
             <main>
                 <div class="container-fluid px-4">
                     <h1 class="mt-4 mb-4"> Reports</h1>
+                    <!-- Generate Report Buttons -->
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="/Reports/DownloadReport" class="btn btn-primary me-2">
+                            <i class="fas fa-file-download"></i> Generate CSV Report
+                        </a>
 
-                    <!-- Generate Report Button -->
-                    <a href="/Reports/DownloadReport" class="btn btn-primary generate-report-btn">
-                        <i class="fas fa-file-download"></i> Generate Report
-                    </a>
+                        <a href="#" onclick="generatePDF()" class="btn btn-danger">
+                            <i class="fas fa-file-pdf"></i> Generate PDF Report
+                        </a>
+                    </div>
 
                     <!-- Application Status Chart -->
                     <div class="row">
@@ -87,6 +92,38 @@
     @Html.Partial("_ScriptLinks")
 
     <script>
+        function generatePDF() {
+            // Get chart images
+            const applicationChart = document.getElementById('applicationStatusChart').toDataURL('image/png');
+            const serviceChart = document.getElementById('serviceRequestsChart').toDataURL('image/png');
+            const paymentChart = document.getElementById('paymentChart').toDataURL('image/png');
+
+            // Send charts to server
+            fetch('/Reports/DownloadPDFReport', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    applicationChart: applicationChart,
+                    serviceChart: serviceChart,
+                    paymentChart: paymentChart
+                })
+            })
+                .then(response => response.blob())
+                .then(blob => {
+                    // Download the PDF
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'LGU_Report.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                })
+                .catch(error => console.error('Error generating PDF:', error));
+        }
+
         // Application Statuses Chart Data
         const applicationStatusData = {
             labels: @Html.Raw(applicationStatusLabels),
