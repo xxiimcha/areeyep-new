@@ -110,7 +110,6 @@ namespace AreEyeP.Controllers
                     {
                         return Json(new { success = false, message = "Invalid payment amount. Please provide a valid amount." });
                     }
-                    EntityFrameworkQueryableExtensions 
                     // Set PaymentRequired to true
                     serviceRequest.PaymentRequired = true;
 

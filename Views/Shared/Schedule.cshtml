@@ -62,11 +62,32 @@
                                             <td>@(request.DateOfService?.ToString("yyyy-MM-dd") ?? "N/A")</td>
                                             <td>@request.ServiceName</td>
                                             <td>@request.UrgencyLevel</td>
-                                            <td><span class="badge bg-info text-dark">@request.Status</span></td>
+                                            <td>
+                                                @{
+                                                    string badgeClass = "bg-secondary"; // Default badge color
+
+                                                    switch (request.Status)
+                                                    {
+                                                        case "Pending":
+                                                            badgeClass = "bg-warning text-dark";
+                                                            break;
+                                                        case "In Progress":
+                                                            badgeClass = "bg-primary";
+                                                            break;
+                                                        case "Assigned":
+                                                            badgeClass = "bg-success";
+                                                            break;
+                                                        case "Cancelled":
+                                                            badgeClass = "bg-danger";
+                                                            break;
+                                                    }
+                                                }
+                                                <span class="badge @badgeClass">@request.Status</span>
+                                            </td>
                                             <td>
                                                 @if (!string.IsNullOrEmpty(request.Staff))
                                                 {
-                                                    <span class="badge bg-success">@request.Staff</span>
+                                                    <span class="badge bg-info">@request.Staff</span>
                                                 }
                                                 else
                                                 {
