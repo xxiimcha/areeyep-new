@@ -23,47 +23,27 @@ namespace AreEyeP.Controllers
         {
             try
             {
-                // Current date for comparison
                 var today = DateTime.UtcNow.Date;
 
-                // Get applications with a valid DateOfRenewal
                 var renewalApplications = await _context.BurialApplications
                     .Where(b => b.DateOfRenewal.HasValue && b.DateOfRenewal.Value.Date >= today)
                     .ToListAsync();
 
                 foreach (var application in renewalApplications)
                 {
-                    var renewalDate = application.DateOfRenewal.Value.Date; // Use only the date portion
+                    var renewalDate = application.DateOfRenewal.Value.Date;
                     var daysUntilRenewal = (renewalDate - today).Days;
 
-                    // Check if a notification needs to be sent
                     if (daysUntilRenewal == 30 || daysUntilRenewal == 14 || daysUntilRenewal == 7 || daysUntilRenewal <= 1)
                     {
-                        string clientMessage = daysUntilRenewal > 1
-                            ? $"Your renewal is due in {daysUntilRenewal} days. Please renew before {renewalDate:MMMM dd, yyyy}."
-                            : "Your renewal is due tomorrow. Please renew to avoid service interruptions.";
+                        string subject = "Reminder: Your Renewal is Due";
+                        string body = GenerateRenewalEmailBody(application, daysUntilRenewal);
 
-                        // Notify the client
-                        AddNotification(
-                            clientMessage,
-                            "Renewals",
-                            "client",
-                            application.UserId
-                        );
-
-                        // Send email notification to the client
+                        // Send email to the client
                         var userEmail = GetUserEmail(application.UserId);
                         if (!string.IsNullOrEmpty(userEmail))
                         {
-                            EmailHelper.SendEmailConfirmation(userEmail, $"{application.FirstName} {application.LastName}");
-                        }
-
-                        // Notify LGU and staff (role-based, no UserId needed)
-                        if (daysUntilRenewal == 30 || daysUntilRenewal == 14 || daysUntilRenewal == 7)
-                        {
-                            string roleMessage = $"Renewal for Application {application.ApplicationId} is due on {renewalDate:MMMM dd, yyyy}.";
-                            AddNotification(roleMessage, "Renewals", "lgu");
-                            AddNotification(roleMessage, "Renewals", "staff");
+                            EmailHelper.SendEmail(userEmail, subject, body);
                         }
                     }
                 }
@@ -75,6 +55,32 @@ namespace AreEyeP.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        private string GenerateRenewalEmailBody(BurialApplication application, int daysUntilRenewal)
+        {
+            string dueDateMessage = daysUntilRenewal > 1
+                ? $"Your renewal is due in {daysUntilRenewal} days, on {application.DateOfRenewal.Value:MMMM dd, yyyy}."
+                : "Your renewal is due tomorrow.";
+
+            return $@"
+            <html>
+                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                    <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;'>
+                        <div style='text-align: center;'>
+                            <img src='https://via.placeholder.com/150' alt='AreEyeP Logo' style='max-width: 150px; margin-bottom: 20px;' />
+                        </div>
+                        <h1 style='color: #2c3e50; text-align: center;'>Renewal Reminder</h1>
+                        <p style='font-size: 16px;'>Dear {application.FirstName} {application.LastName},</p>
+                        <p style='font-size: 16px;'>{dueDateMessage}</p>
+                        <p style='font-size: 16px;'>Please renew your application before the due date to avoid service interruptions.</p>
+                        <p style='font-size: 16px;'>If you have questions, contact us at <a href='mailto:support@areeyep.com' style='color: #3498db;'>support@areeyep.com</a>.</p>
+                        <hr style='border-top: 1px solid #ddd;' />
+                        <p style='font-size: 14px; text-align: center;'>Best regards,<br /><strong>The AreEyeP Team</strong></p>
+                        <p style='font-size: 12px; text-align: center; color: #999;'>This is an automated email. Please do not reply.</p>
+                    </div>
+                </body>
+            </html>";
         }
 
         private void AddNotification(string message, string type, string targetRole, int? userId = null)
@@ -109,7 +115,7 @@ namespace AreEyeP.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendRenewalNotificationsManually()
+        public async Task<IActionResult> SendRenewalNotifications()
         {
             try
             {

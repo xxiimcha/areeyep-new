@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using AreEyeP.Models;
-using AreEyeP.Data; // Ensure this is the namespace where your ApplicationDbContext is located
+using AreEyeP.Data;
+using AreEyeP.Helpers;
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 
@@ -13,19 +15,18 @@ namespace AreEyeP.Controllers
         public AccountController(ApplicationDbContext context)
         {
             _context = context;
-            SeedAdminUser(); // Seed admin user upon controller instantiation
+            SeedAdminUser();
         }
 
         private void SeedAdminUser()
         {
-            // Check if any admin user already exists
             if (!_context.Users.Any(u => u.Role == "admin"))
             {
                 var adminUser = new User
                 {
                     Name = "System Administrator",
                     Email = "admin@example.com",
-                    Password = "Admin@123", // Default password (Consider hashing this in production)
+                    Password = "Admin@123",
                     Role = "admin"
                 };
 
@@ -37,10 +38,7 @@ namespace AreEyeP.Controllers
         [HttpGet]
         public IActionResult Logout()
         {
-            // Clear the user session
             HttpContext.Session.Clear();
-
-            // Redirect to the login page
             return RedirectToAction("Index", "Home");
         }
 
@@ -50,7 +48,6 @@ namespace AreEyeP.Controllers
             return View();
         }
 
-        // GET: /Account/Login
         [HttpGet]
         public IActionResult Login()
         {
@@ -66,12 +63,10 @@ namespace AreEyeP.Controllers
 
                 if (user != null)
                 {
-                    // Set user session data
                     HttpContext.Session.SetString("UserRole", user.Role);
                     HttpContext.Session.SetInt32("UserId", user.Id);
                     HttpContext.Session.SetString("UserName", user.Name);
 
-                    // Redirect based on role
                     switch (user.Role.Trim().ToLower())
                     {
                         case "admin":
@@ -98,40 +93,37 @@ namespace AreEyeP.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // GET: /Account/Register
         [HttpGet]
         public IActionResult Register()
         {
             return View();
         }
 
-        // POST: /Account/Register
         [HttpPost]
         public IActionResult Register(RegistrationViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // Insert logic to save the new user to the database
                 bool isRegistrationSuccessful = SaveNewUser(model);
 
                 if (isRegistrationSuccessful)
                 {
                     try
                     {
-                        // Send confirmation email
-                        AreEyeP.Helpers.EmailHelper.SendEmailConfirmation(model.Email, $"{model.FirstName} {model.LastName}");
+                        // Generate personalized welcome email
+                        string subject = "Welcome to AreEyeP!";
+                        string body = GenerateWelcomeEmailBody(model.FirstName, model.LastName);
+
+                        // Send the welcome email
+                        EmailHelper.SendEmail(model.Email, subject, body);
                     }
                     catch (Exception ex)
                     {
-                        // Log the error and set TempData for email failure (optional)
                         Console.WriteLine($"Error sending email: {ex.Message}");
-                        TempData["ErrorMessage"] = "Your account was created, but we couldn't send a confirmation email. Please contact support.";
+                        TempData["ErrorMessage"] = "Your account was created, but we couldn't send a welcome email. Please contact support.";
                     }
 
-                    // Use TempData to pass success message to the Index action
-                    TempData["SuccessMessage"] = "Your account has been registered successfully! Please check your email for confirmation.";
-
-                    // Redirect to the Index page after successful registration
+                    TempData["SuccessMessage"] = "Your account has been registered successfully! Please check your email for a welcome message.";
                     return RedirectToAction("Index", "Home");
                 }
                 else
@@ -143,49 +135,58 @@ namespace AreEyeP.Controllers
             return View(model);
         }
 
-        // Method for validating user credentials
         private User ValidateUser(string email, string password)
         {
-            // Check against Users table in the database
             return _context.Users.FirstOrDefault(u => u.Email == email && u.Password == password);
         }
 
-        // Method for saving a new user
         private bool SaveNewUser(RegistrationViewModel model)
         {
             try
             {
-                // Add the new user to the Users table
                 var user = new User
                 {
                     Name = $"{model.FirstName} {model.LastName}",
                     Email = model.Email,
                     Password = model.Password,
-                    Role = "client" // Set role as 'client'
+                    Role = "client"
                 };
                 _context.Users.Add(user);
-
-                // Save changes to get the User ID
                 _context.SaveChanges();
 
-                // Attach the UserId to the RegistrationViewModel (Client)
-                model.UserId = user.Id; // Ensure UserId is part of RegistrationViewModel
+                model.UserId = user.Id;
 
-                // Add the new user to the Clients table using RegistrationViewModel
                 _context.Clients.Add(model);
-
-                // Save changes to the database
                 _context.SaveChanges();
 
                 return true;
             }
             catch (Exception ex)
             {
-                // Log the error for debugging purposes
                 Console.WriteLine($"Error saving new user: {ex.Message}");
                 return false;
             }
         }
 
+        private string GenerateWelcomeEmailBody(string firstName, string lastName)
+        {
+            return $@"
+                <html>
+                    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;'>
+                            <div style='text-align: center;'>
+                                <img src='https://via.placeholder.com/150' alt='AreEyeP Logo' style='max-width: 150px; margin-bottom: 20px;' />
+                            </div>
+                            <h1 style='color: #2c3e50; text-align: center;'>Welcome, {firstName} {lastName}!</h1>
+                            <p style='font-size: 16px;'>Thank you for joining <strong>AreEyeP</strong>. Your account has been successfully created.</p>
+                            <p style='font-size: 16px;'>You can now log in to your account and explore our services.</p>
+                            <p style='font-size: 16px;'>If you have any questions, feel free to reach out to us at <a href='mailto:support@areeyep.com' style='color: #3498db;'>support@areeyep.com</a>.</p>
+                            <hr style='border-top: 1px solid #ddd;' />
+                            <p style='font-size: 14px; text-align: center;'>Best regards,<br /><strong>The AreEyeP Team</strong></p>
+                            <p style='font-size: 12px; text-align: center; color: #999;'>This is an automated email. Please do not reply.</p>
+                        </div>
+                    </body>
+                </html>";
+        }
     }
 }

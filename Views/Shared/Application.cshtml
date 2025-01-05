@@ -43,10 +43,9 @@
                         <!-- Add Manual Renewal Notification Button -->
                         <button class="btn btn-primary" id="manualRenewalButton" onclick="sendRenewalNotifications()">Send Renewal Notifications</button>
                     </div>
-
                     <!-- Nav Tabs -->
                     <ul class="nav nav-tabs" id="applicationTabs" role="tablist">
-                        @foreach (var status in new[] { "Pending", "Pending Payment", "Payment for Approval", "Approved", "Declined" })
+                        @foreach (var status in new[] { "Pending", "Pending Payment", "Payment for Approval", "Approved", "Declined", "For Renewal" })
                         {
                             var statusLower = status.ToLower().Replace(" ", "-");
                             var hasItems = Model.Any(m => m.Status == status) && (status != "Approved" && status != "Declined");
@@ -69,8 +68,9 @@
                             </li>
                         }
                     </ul>
+
                     <div class="tab-content mt-4" id="applicationTabsContent">
-                        @foreach (var status in new[] { "Pending", "Pending Payment", "Approved", "Declined", "Payment for Approval" })
+                        @foreach (var status in new[] { "Pending", "Pending Payment", "Approved", "Declined", "Payment for Approval", "For Renewal" })
                         {
                             <div class="tab-pane fade @(status == "Pending" ? "show active" : "")" id="@status.ToLower().Replace(" ", "-")" role="tabpanel" aria-labelledby="@status.ToLower().Replace(" ", "-")-tab">
                                 @if (Model.Any(m => m.Status == status))
@@ -117,7 +117,6 @@
                                 }
                             </div>
                         }
-                    </div>
                 </div>
             </main>
         </div>
