@@ -138,6 +138,25 @@ namespace AreEyeP.Controllers
                     _context.Notifications.Add(notification);
                     await _context.SaveChangesAsync();
 
+                    // Fetch the user's email address
+                    var user = await _context.Users.FindAsync(model.UserId);
+                    if (user != null)
+                    {
+                        try
+                        {
+                            // Generate email content
+                            string subject = "Burial Application Submitted Successfully";
+                            string body = GenerateSubmissionEmailBody(model);
+
+                            // Send email to the user
+                            AreEyeP.Helpers.EmailHelper.SendEmail(user.Email, subject, body);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending email: {ex.Message}");
+                        }
+                    }
+
                     return Json(new { success = true, message = $"Application submitted successfully with ID: {model.ApplicationId}" });
                 }
                 catch (Exception ex)
@@ -158,7 +177,32 @@ namespace AreEyeP.Controllers
             return Json(new { success = false, message = "Validation failed.", errors = validationErrors });
         }
 
+        private string GenerateSubmissionEmailBody(BurialApplication model)
+        {
+            // Since DateOfBurial is not nullable, we directly use it
+            string dateOfBurial = model.DateOfBurial.ToString("MMMM dd, yyyy");
 
+            return $@"
+        <html>
+            <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;'>
+                    <h1 style='color: #2c3e50; text-align: center;'>Application Submitted Successfully</h1>
+                    <p style='font-size: 16px;'>Dear {model.FirstName} {model.LastName},</p>
+                    <p style='font-size: 16px;'>Your burial application has been successfully submitted.</p>
+                    <p style='font-size: 16px;'>
+                        Application ID: <strong>{model.ApplicationId}</strong><br />
+                        Deceased Name: <strong>{model.DeceasedFirstName} {model.DeceasedLastName}</strong><br />
+                        Date of Burial: <strong>{dateOfBurial}</strong>
+                    </p>
+                    <p style='font-size: 16px;'>We will review your application and notify you about the status soon.</p>
+                    <p style='font-size: 16px;'>If you have any questions, feel free to contact us.</p>
+                    <hr style='border-top: 1px solid #ddd;' />
+                    <p style='font-size: 14px; text-align: center;'>Best regards,<br /><strong>The AreEyeP Team</strong></p>
+                    <p style='font-size: 12px; text-align: center; color: #999;'>This is an automated email. Please do not reply.</p>
+                </div>
+            </body>
+        </html>";
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetDetails(int id)
