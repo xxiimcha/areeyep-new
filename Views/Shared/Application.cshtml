@@ -224,7 +224,8 @@
                     {
                         <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
                         <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="showDeclineReasonModal()">Decline</button>
-                        <button id="confirmPaymentButton" class="btn btn-primary" onclick="completeApplication()">Confirm Payment</button>
+                        <button id="confirmPaymentButton" class="btn btn-primary" onclick="completeApplication()" style="display: none;">Confirm Payment</button>
+                        <button id="confirmRenewalPaymentButton" class="btn btn-warning" style="display: none;" onclick="confirmRenewalPayment()">Confirm Renewal Payment</button>
                     }
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
@@ -400,12 +401,15 @@
                         $('#approveButton').hide();
                         $('#declineButton').hide();
                         $('#confirmPaymentButton').hide();
+                        $('#confirmRenewalPaymentButton').hide();
 
                         if (application.status === "Pending") {
                             $('#approveButton').show();
                             $('#declineButton').show();
                         } else if (application.status === "Payment for Approval") {
                             $('#confirmPaymentButton').show();
+                        } else if (application.ForRenewal) {
+                            $('#confirmRenewalPaymentButton').show();
                         }
 
                         // Show the modal
@@ -420,6 +424,47 @@
                     console.error("Fetch error:", error);
                 });
         }
+
+        function confirmRenewalPayment() {
+            const applicationId = $('#applicationModal').data('applicationId');
+            console.log("Confirm Renewal Payment clicked. Application ID:", applicationId);
+
+            if (!applicationId) {
+                alert("Application ID is missing. Please try again.");
+                return;
+            }
+
+            // Show a confirmation dialog
+            if (!confirm("Are you sure you want to confirm the renewal payment for this application?")) {
+                return;
+            }
+
+            // Send the request to confirm renewal payment
+            fetch(`/Renewal/ConfirmRenewalPayment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ applicationId }),
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert(result.message || "Renewal payment confirmed successfully.");
+                        location.reload(); // Reload the page to update the application status
+                    } else {
+                        alert(result.message || "Failed to confirm renewal payment.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error confirming renewal payment:", error);
+                    alert("An error occurred while confirming the renewal payment.");
+                });
+
+            // Hide the modal after confirmation
+            $('#applicationModal').modal('hide');
+        }
+
 
         function completeApplication() {
             const applicationId = $('#applicationModal').data('applicationId');
