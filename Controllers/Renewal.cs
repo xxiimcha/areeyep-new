@@ -17,7 +17,6 @@ namespace AreEyeP.Controllers
         {
             _context = context;
         }
-
         [HttpPost]
         public async Task<IActionResult> ProcessRenewalNotifications()
         {
@@ -56,6 +55,28 @@ namespace AreEyeP.Controllers
                             "client",
                             application.UserId
                         );
+
+                        // Fetch the existing payment record with the same ApplicationId
+                        var existingPayment = await _context.ClientPayments
+                            .FirstOrDefaultAsync(p => p.ApplicationId == application.Id);
+
+                        if (existingPayment != null)
+                        {
+                            // Create a new payment record for renewal
+                            var renewalPayment = new ClientPayment
+                            {
+                                UserId = existingPayment.UserId,
+                                ApplicationId = existingPayment.ApplicationId,
+                                Amount = existingPayment.Amount, // Copy the amount from the existing payment
+                                PaymentMethod = "Unspecified",  // Update if required
+                                Status = "Pending",            // Set as pending for the renewal
+                                PaymentDate = DateTime.UtcNow, // Set current date
+                                ReferenceNumber = GenerateReferenceNumber(), // Generate a new reference number
+                                ServiceType = "Renewal"        // Set service type as renewal
+                            };
+
+                            _context.ClientPayments.Add(renewalPayment);
+                        }
                     }
                 }
 
@@ -66,6 +87,11 @@ namespace AreEyeP.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        private string GenerateReferenceNumber()
+        {
+            return Guid.NewGuid().ToString("N").ToUpper(); // Generate a unique reference number
         }
 
         private string GenerateRenewalEmailBody(BurialApplication application, int daysUntilRenewal)
