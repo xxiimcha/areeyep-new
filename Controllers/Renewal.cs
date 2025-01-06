@@ -112,25 +112,36 @@ namespace AreEyeP.Controllers
                 ? $"Your renewal is due in {daysUntilRenewal} days, on {application.DateOfRenewal.Value:MMMM dd, yyyy}."
                 : "Your renewal is due tomorrow.";
 
+            // Include only the deceased's data and application ID in the email
+            string deceasedInfo = $@"
+                <p><strong>Application ID:</strong> {application.ApplicationId}</p>
+                <p><strong>Deceased Name:</strong> {application.DeceasedFirstName} {application.DeceasedLastName}</p>
+            ";
+
             return $@"
-            <html>
-                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                    <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;'>
-                        <div style='text-align: center;'>
-                            <img src='https://via.placeholder.com/150' alt='AreEyeP Logo' style='max-width: 150px; margin-bottom: 20px;' />
+                <html>
+                    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;'>
+                            <div style='text-align: center;'>
+                                <img src='https://via.placeholder.com/150' alt='AreEyeP Logo' style='max-width: 150px; margin-bottom: 20px;' />
+                            </div>
+                            <h1 style='color: #2c3e50; text-align: center;'>Renewal Reminder</h1>
+                            <p style='font-size: 16px;'>Dear {application.FirstName} {application.LastName},</p>
+                            <p style='font-size: 16px;'>{dueDateMessage}</p>
+                            <hr style='border-top: 1px solid #ddd;' />
+                            <h3 style='color: #2c3e50;'>Deceased Information</h3>
+                            {deceasedInfo}
+                            <hr style='border-top: 1px solid #ddd;' />
+                            <p style='font-size: 16px;'>Please renew your application before the due date to avoid service interruptions.</p>
+                            <p style='font-size: 16px;'>If you have questions, contact us at <a href='mailto:support@areeyep.com' style='color: #3498db;'>support@areeyep.com</a>.</p>
+                            <hr style='border-top: 1px solid #ddd;' />
+                            <p style='font-size: 14px; text-align: center;'>Best regards,<br /><strong>The AreEyeP Team</strong></p>
+                            <p style='font-size: 12px; text-align: center; color: #999;'>This is an automated email. Please do not reply.</p>
                         </div>
-                        <h1 style='color: #2c3e50; text-align: center;'>Renewal Reminder</h1>
-                        <p style='font-size: 16px;'>Dear {application.FirstName} {application.LastName},</p>
-                        <p style='font-size: 16px;'>{dueDateMessage}</p>
-                        <p style='font-size: 16px;'>Please renew your application before the due date to avoid service interruptions.</p>
-                        <p style='font-size: 16px;'>If you have questions, contact us at <a href='mailto:support@areeyep.com' style='color: #3498db;'>support@areeyep.com</a>.</p>
-                        <hr style='border-top: 1px solid #ddd;' />
-                        <p style='font-size: 14px; text-align: center;'>Best regards,<br /><strong>The AreEyeP Team</strong></p>
-                        <p style='font-size: 12px; text-align: center; color: #999;'>This is an automated email. Please do not reply.</p>
-                    </div>
-                </body>
-            </html>";
+                    </body>
+                </html>";
         }
+
 
         private void AddNotification(string message, string type, string targetRole, int? userId = null)
         {
