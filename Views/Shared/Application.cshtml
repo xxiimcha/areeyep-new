@@ -88,26 +88,6 @@
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                @{
-                                                    int i = 1;
-                                                    foreach (var application in Model.Where(m => m.Status == status))
-                                                    {
-                                                        <tr>
-                                                            <td>@i</td>
-                                                            <td>@application.ApplicationId</td>
-                                                            <td>@application.FirstName @application.LastName</td>
-                                                            <td>@application.DeceasedFirstName @application.DeceasedLastName</td>
-                                                            <td>@application.DateOfDeath.ToShortDateString()</td>
-                                                            <td>@application.DateOfBurial.ToShortDateString()</td>
-                                                            <td>
-                                                                <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#applicationModal" onclick="viewApplication(@application.Id)">View</button>
-                                                            </td>
-                                                        </tr>
-                                                        i++;
-                                                    }
-                                                }
-                                            </tbody>
                                         </table>
                                     </div>
                                 }
@@ -222,9 +202,17 @@
                 <div class="modal-footer">
                     @if (ViewBag.UserRole == "LGU")
                     {
+                        <!-- Approve button for Pending applications -->
                         <button id="approveButton" class="btn btn-success" style="display: none;" onclick="approveApplication()">Approve</button>
+
+                        <!-- Decline button for Pending applications -->
                         <button id="declineButton" class="btn btn-danger" style="display: none;" onclick="showDeclineReasonModal()">Decline</button>
-                        <button id="confirmPaymentButton" class="btn btn-primary" onclick="completeApplication()">Confirm Payment</button>
+
+                        <!-- Confirm Payment button for Pending Payment applications -->
+                        <button id="confirmPaymentButton" class="btn btn-primary" style="display: none;" onclick="completeApplication()">Confirm Payment</button>
+
+                        <!-- Confirm Renewal Payment button for For Renewal applications -->
+                        <button id="confirmRenewalPaymentButton" class="btn btn-success" style="display: none;" onclick="confirmRenewalPayment()">Confirm Renewal Payment</button>
                     }
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>

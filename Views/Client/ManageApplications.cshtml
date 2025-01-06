@@ -85,13 +85,13 @@
                                                     </td>
                                                     <td>
                                                         <button class="btn btn-primary btn-sm view-btn" data-id="@application.Id">View</button>
-                                                        @if (application.Status != "Approved" || application.Status != "Canceled" || application.Status == "Declined")
-                                                        {
-                                                            <button class="btn btn-danger btn-sm cancel-btn" data-id="@application.Id">Cancel</button>
-                                                        }
-                                                        @if (application.Status == "Pending Payment")
+                                                        @if (application.Status == "For Renewal" || application.Status == "Pending Payment")
                                                         {
                                                             <button class="btn btn-success btn-sm add-payment-btn" data-id="@application.Id">Add Payment</button>
+                                                        }
+                                                        @if (application.Status != "Approved" && application.Status != "Canceled" && application.Status != "Declined")
+                                                        {
+                                                            <button class="btn btn-danger btn-sm cancel-btn" data-id="@application.Id">Cancel</button>
                                                         }
                                                     </td>
                                                 </tr>
@@ -367,7 +367,6 @@
                 }
             });
         }
-
 
         $(document).ready(function () {
             // Preview the uploaded image

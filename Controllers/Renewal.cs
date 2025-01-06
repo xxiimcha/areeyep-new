@@ -17,6 +17,7 @@ namespace AreEyeP.Controllers
         {
             _context = context;
         }
+
         [HttpPost]
         public async Task<IActionResult> ProcessRenewalNotifications()
         {
@@ -47,6 +48,7 @@ namespace AreEyeP.Controllers
 
                         // Update application status to "For Renewal"
                         application.Status = "For Renewal";
+                        application.ForRenewal = true; // Mark the application as "For Renewal"
 
                         // Add a notification for the client
                         AddNotification(
@@ -56,26 +58,36 @@ namespace AreEyeP.Controllers
                             application.UserId
                         );
 
-                        // Fetch the existing payment record with the same ApplicationId
+                        // Fetch the existing payment for the current application
                         var existingPayment = await _context.ClientPayments
                             .FirstOrDefaultAsync(p => p.ApplicationId == application.Id);
 
                         if (existingPayment != null)
                         {
-                            // Create a new payment record for renewal
-                            var renewalPayment = new ClientPayment
-                            {
-                                UserId = existingPayment.UserId,
-                                ApplicationId = existingPayment.ApplicationId,
-                                Amount = existingPayment.Amount, // Copy the amount from the existing payment
-                                PaymentMethod = "Unspecified",  // Update if required
-                                Status = "Pending",            // Set as pending for the renewal
-                                PaymentDate = DateTime.UtcNow, // Set current date
-                                ReferenceNumber = GenerateReferenceNumber(), // Generate a new reference number
-                                ServiceType = "Renewal"        // Set service type as renewal
-                            };
+                            // Check for existing pending payment for the same ApplicationId and Amount
+                            var existingPendingPayment = await _context.ClientPayments
+                                .FirstOrDefaultAsync(p =>
+                                    p.ApplicationId == application.Id &&
+                                    p.Amount == existingPayment.Amount &&
+                                    p.Status == "Pending");
 
-                            _context.ClientPayments.Add(renewalPayment);
+                            // If no pending payment exists, create a new renewal payment
+                            if (existingPendingPayment == null)
+                            {
+                                var renewalPayment = new ClientPayment
+                                {
+                                    UserId = existingPayment.UserId,
+                                    ApplicationId = existingPayment.ApplicationId,
+                                    Amount = existingPayment.Amount, // Copy the amount from the existing payment
+                                    PaymentMethod = "Unspecified",  // Update if required
+                                    Status = "Pending",            // Set as pending for the renewal
+                                    PaymentDate = DateTime.UtcNow, // Set current date
+                                    ReferenceNumber = GenerateReferenceNumber(), // Generate a new reference number
+                                    ServiceType = "Renewal"        // Set service type as renewal
+                                };
+
+                                _context.ClientPayments.Add(renewalPayment);
+                            }
                         }
                     }
                 }

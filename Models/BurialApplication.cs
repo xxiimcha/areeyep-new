@@ -106,5 +106,13 @@ namespace AreEyeP.Models
         [Display(Name = "Date of Renewal")]
         [DataType(DataType.Date)]
         public DateTime? DateOfRenewal { get; set; }  // Make this nullable
+
+        // New IsRenewal column
+        [Display(Name = "Is Renewal")]
+        public bool IsRenewal { get; set; } = false; // Default to false
+
+        // New ForRenewal column
+        [Display(Name = "For Renewal")]
+        public bool ForRenewal { get; set; } = false; // Default to false
     }
 }
