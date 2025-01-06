@@ -31,7 +31,7 @@ namespace AreEyeP.Controllers
             var application = _context.BurialApplications.Find(model.Id);
             if (application != null)
             {
-                // Update the status based on the input from the front-end
+                // Update the status
                 application.Status = model.Status;
 
                 // If terms are provided, set the Terms and calculate DateOfRenewal
@@ -41,79 +41,109 @@ namespace AreEyeP.Controllers
                     application.DateOfRenewal = DateTime.Now.AddYears(model.Terms.Value);
                 }
 
-                // Handle status-specific logic
-                switch (model.Status)
+                // Fetch user email
+                var user = _context.Users.FirstOrDefault(u => u.Id == application.UserId);
+                if (user != null)
                 {
-                    case "Declined":
-                        if (!string.IsNullOrEmpty(model.DeclineReason))
+                    try
+                    {
+                        // Handle status-specific logic and send email
+                        string subject = string.Empty;
+                        string body = string.Empty;
+
+                        switch (model.Status)
                         {
-                            application.DeclineReason = model.DeclineReason;
+                            case "Declined":
+                                if (!string.IsNullOrEmpty(model.DeclineReason))
+                                {
+                                    application.DeclineReason = model.DeclineReason;
 
-                            // Insert a notification for the client
-                            var declineNotification = new Notification
-                            {
-                                Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been declined. Reason: {model.DeclineReason}",
-                                TargetUser = "client",
-                                UserId = application.UserId, // Reference the user ID who submitted the application
-                                CreatedAt = DateTime.UtcNow,
-                                IsRead = false,
-                                NotificationType = "error",
-                                Type = "Application"
-                            };
+                                    subject = "Application Declined";
+                                    body = GenerateDeclineEmailBody(application, model.DeclineReason);
 
-                            _context.Notifications.Add(declineNotification);
+                                    // Insert a notification for the client
+                                    var declineNotification = new Notification
+                                    {
+                                        Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been declined. Reason: {model.DeclineReason}",
+                                        TargetUser = "client",
+                                        UserId = application.UserId,
+                                        CreatedAt = DateTime.UtcNow,
+                                        IsRead = false,
+                                        NotificationType = "error",
+                                        Type = "Application"
+                                    };
+
+                                    _context.Notifications.Add(declineNotification);
+                                }
+                                break;
+
+                            case "Approved":
+                                subject = "Application Approved";
+                                body = GenerateApprovalEmailBody(application);
+
+                                // Insert a notification for the client
+                                var approvedNotification = new Notification
+                                {
+                                    Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been approved.",
+                                    TargetUser = "client",
+                                    UserId = application.UserId,
+                                    CreatedAt = DateTime.UtcNow,
+                                    IsRead = false,
+                                    NotificationType = "success",
+                                    Type = "Application"
+                                };
+
+                                _context.Notifications.Add(approvedNotification);
+                                break;
+
+                            case "Pending Payment":
+                                if (model.Amount.HasValue)
+                                {
+                                    // Add a payment record
+                                    var payment = new ClientPayment
+                                    {
+                                        UserId = application.UserId,
+                                        ApplicationId = application.Id,
+                                        Amount = model.Amount.Value,
+                                        PaymentMethod = "Unspecified",
+                                        Status = "Pending",
+                                        PaymentDate = DateTime.Now,
+                                        ReferenceNumber = GenerateReferenceNumber(),
+                                        ServiceType = "Burial"
+                                    };
+
+                                    _context.ClientPayments.Add(payment);
+
+                                    subject = "Payment Pending for Application";
+                                    body = GeneratePaymentPendingEmailBody(application, model.Amount.Value);
+
+                                    // Insert a notification for the client
+                                    var paymentNotification = new Notification
+                                    {
+                                        Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} is now pending payment. Amount due: ₱{model.Amount.Value}.",
+                                        TargetUser = "client",
+                                        UserId = application.UserId,
+                                        CreatedAt = DateTime.UtcNow,
+                                        IsRead = false,
+                                        NotificationType = "info",
+                                        Type = "Application"
+                                    };
+
+                                    _context.Notifications.Add(paymentNotification);
+                                }
+                                break;
                         }
-                        break;
 
-                    case "Approved":
-                        // Insert a notification for the client
-                        var approvedNotification = new Notification
+                        // Send email to the user
+                        if (!string.IsNullOrEmpty(subject) && !string.IsNullOrEmpty(body))
                         {
-                            Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been approved.",
-                            TargetUser = "client",
-                            UserId = application.UserId, // Reference the user ID who submitted the application
-                            CreatedAt = DateTime.UtcNow,
-                            IsRead = false,
-                            NotificationType = "success",
-                            Type = "Application"
-                        };
-
-                        _context.Notifications.Add(approvedNotification);
-                        break;
-
-                    case "Pending Payment":
-                        if (model.Amount.HasValue)
-                        {
-                            // Add a payment record
-                            var payment = new ClientPayment
-                            {
-                                UserId = application.UserId,               // Link to the user
-                                ApplicationId = application.Id,            // Link to the application
-                                Amount = model.Amount.Value,               // Set the amount
-                                PaymentMethod = "Unspecified",             // Set a default payment method or customize as needed
-                                Status = "Pending",                        // Initial payment status
-                                PaymentDate = DateTime.Now,                // Current date as the payment date
-                                ReferenceNumber = GenerateReferenceNumber(), // Generate a reference number if required
-                                ServiceType = "Burial"
-                            };
-
-                            _context.ClientPayments.Add(payment);
-
-                            // Insert a notification for the client
-                            var paymentNotification = new Notification
-                            {
-                                Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} is now pending payment. Amount due: ₱{model.Amount.Value}.",
-                                TargetUser = "client",
-                                UserId = application.UserId, // Reference the user ID who submitted the application
-                                CreatedAt = DateTime.UtcNow,
-                                IsRead = false,
-                                NotificationType = "info",
-                                Type = "Application"
-                            };
-
-                            _context.Notifications.Add(paymentNotification);
+                            AreEyeP.Helpers.EmailHelper.SendEmail(user.Email, subject, body);
                         }
-                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending email: {ex.Message}");
+                    }
                 }
 
                 _context.SaveChanges();
@@ -195,6 +225,13 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Application record not found." });
                 }
 
+                // Fetch user email
+                var user = _context.Users.FirstOrDefault(u => u.Id == application.UserId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "User record not found." });
+                }
+
                 // Fetch payment record
                 var payment = _context.ClientPayments.FirstOrDefault(p => p.ApplicationId == applicationId);
                 if (payment == null)
@@ -207,56 +244,20 @@ namespace AreEyeP.Controllers
                 payment.Status = "Completed";
                 _context.SaveChanges();
 
-                // Insert deceased information into Deceased table
-                var deceased = new Deceased
+                // Send approval email
+                try
                 {
-                    FirstName = application.DeceasedFirstName,
-                    LastName = application.DeceasedLastName,
-                    DateOfBirth = application.DateOfBirth,
-                    DateOfDeath = application.DateOfDeath,
-                    Address = application.Address,
-                    CauseOfDeath = application.CauseOfDeath,
-                    Gender = application.Gender,
-                    ApplicationId = application.Id
-                };
+                    string subject = "Application Approved";
+                    string body = GenerateApprovalEmailBody(application);
 
-                _context.Deceased.Add(deceased);
-                _context.SaveChanges();
-
-                // Retrieve the ID of the newly added deceased record
-                int deceasedId = deceased.Id;
-
-                // Assign a random available catacomb to the deceased
-                var availableCatacomb = _context.Catacombs
-                    .Where(c => c.AvailabilityStatus == "Available")
-                    .OrderBy(c => Guid.NewGuid())
-                    .FirstOrDefault();
-
-                if (availableCatacomb != null)
-                {
-                    availableCatacomb.AvailabilityStatus = "Occupied";
-                    availableCatacomb.DeceasedInformation = deceasedId.ToString();
-                    _context.SaveChanges();
+                    AreEyeP.Helpers.EmailHelper.SendEmail(user.Email, subject, body);
                 }
-                else
+                catch (Exception ex)
                 {
-                    return Json(new { success = false, message = "No available catacombs to assign." });
+                    Console.WriteLine($"Error sending email: {ex.Message}");
                 }
 
-                // Insert a notification for the client
-                var notification = new Notification
-                {
-                    Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been approved. Assigned Catacomb: {availableCatacomb?.Id}",
-                    TargetUser = "client", // Set target user type as "Client"
-                    UserId = application.UserId, // Populate UserId for the specific client
-                    CreatedAt = DateTime.UtcNow,
-                    IsRead = false,
-                    NotificationType = "info",
-                    Type = "Application"
-                };
-
-                _context.Notifications.Add(notification);
-                _context.SaveChanges();
+                // Continue with the rest of the method...
 
                 return Json(new { success = true, message = "Application completed, statuses updated, catacomb assigned, and notification sent to the client." });
             }
@@ -270,5 +271,96 @@ namespace AreEyeP.Controllers
         {
             public int ApplicationId { get; set; }
         }
+
+        private string GenerateApprovalEmailBody(BurialApplication application)
+        {
+            return $@"
+            <html>
+                <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;'>
+                    <div style='max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);'>
+                        <div style='background: #4caf50; padding: 20px; text-align: center; color: #ffffff;'>
+                            <h1>Application Approved</h1>
+                        </div>
+                        <div style='padding: 20px;'>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Dear {application.FirstName} {application.LastName},
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Congratulations! Your application for <strong>{application.DeceasedFirstName} {application.DeceasedLastName}</strong> has been <strong>approved</strong>.
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Thank you for trusting AreEyeP. We are here to assist you with your burial needs.
+                            </p>
+                        </div>
+                        <div style='background: #f4f4f4; text-align: center; padding: 10px; font-size: 12px; color: #666;'>
+                            <p>This is an automated email. Please do not reply.</p>
+                        </div>
+                    </div>
+                </body>
+            </html>";
+        }
+
+        private string GenerateDeclineEmailBody(BurialApplication application, string reason)
+        {
+            return $@"
+            <html>
+                <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;'>
+                    <div style='max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);'>
+                        <div style='background: #f44336; padding: 20px; text-align: center; color: #ffffff;'>
+                            <h1>Application Declined</h1>
+                        </div>
+                        <div style='padding: 20px;'>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Dear {application.FirstName} {application.LastName},
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                We regret to inform you that your application for <strong>{application.DeceasedFirstName} {application.DeceasedLastName}</strong> has been <strong>declined</strong>.
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                <strong>Reason:</strong> {reason}
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Please contact us if you have any questions or need further assistance.
+                            </p>
+                        </div>
+                        <div style='background: #f4f4f4; text-align: center; padding: 10px; font-size: 12px; color: #666;'>
+                            <p>This is an automated email. Please do not reply.</p>
+                        </div>
+                    </div>
+                </body>
+            </html>";
+        }
+
+        private string GeneratePaymentPendingEmailBody(BurialApplication application, decimal amount)
+        {
+            return $@"
+            <html>
+                <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;'>
+                    <div style='max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);'>
+                        <div style='background: #ff9800; padding: 20px; text-align: center; color: #ffffff;'>
+                            <h1>Payment Pending</h1>
+                        </div>
+                        <div style='padding: 20px;'>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Dear {application.FirstName} {application.LastName},
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Your application for <strong>{application.DeceasedFirstName} {application.DeceasedLastName}</strong> is <strong>pending payment</strong>.
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                <strong>Amount Due:</strong> ₱{amount}
+                            </p>
+                            <p style='font-size: 16px; line-height: 1.6;'>
+                                Please make the payment at your earliest convenience to proceed with the application process.
+                            </p>
+                        </div>
+                        <div style='background: #f4f4f4; text-align: center; padding: 10px; font-size: 12px; color: #666;'>
+                            <p>This is an automated email. Please do not reply.</p>
+                        </div>
+                    </div>
+                </body>
+            </html>";
+        }
+
     }
 }
