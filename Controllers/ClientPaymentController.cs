@@ -218,5 +218,54 @@ namespace AreEyeP.Controllers
             public string PaymentMethod { get; set; }
             public IFormFile PaymentProof { get; set; }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ConfirmRenewalPayment([FromBody] RenewalPaymentRequest request)
+        {
+            if (request == null || request.ApplicationId <= 0)
+            {
+                return Json(new { success = false, message = "Invalid application ID." });
+            }
+
+            try
+            {
+                var application = await _context.BurialApplications
+                    .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && a.Status == "For Renewal");
+
+                if (application == null)
+                {
+                    return Json(new { success = false, message = "Application not found or is not marked as 'For Renewal'." });
+                }
+
+                // Update application status to "Renewed"
+                application.Status = "Renewed";
+                application.DateOfRenewal = DateTime.UtcNow.AddYears(application.Terms ?? 1); // Extend the renewal date
+                application.ForRenewal = false;
+
+                // Update the payment status if applicable
+                var payment = await _context.ClientPayments
+                    .FirstOrDefaultAsync(p => p.ApplicationId == application.Id && p.ServiceType == "Renewal" && p.Status == "Pending");
+
+                if (payment != null)
+                {
+                    payment.Status = "Completed";
+                    payment.PaymentDate = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Renewal payment confirmed successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred while confirming renewal payment: " + ex.Message });
+            }
+        }
+
+        public class RenewalPaymentRequest
+        {
+            public int ApplicationId { get; set; }
+        }
+
     }
 }
