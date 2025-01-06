@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AreEyeP.Data; // Adjust namespace based on your project structure
-using AreEyeP.Helpers; // Include the EmailHelper namespace
+using AreEyeP.Data;
+using AreEyeP.Helpers;
 using AreEyeP.Models;
 using System;
 using System.Linq;
@@ -45,11 +45,22 @@ namespace AreEyeP.Controllers
                         {
                             EmailHelper.SendEmail(userEmail, subject, body);
                         }
+
+                        // Update application status to "For Renewal"
+                        application.Status = "For Renewal";
+
+                        // Add a notification for the client
+                        AddNotification(
+                            $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} is due for renewal on {renewalDate:MMMM dd, yyyy}.",
+                            "Renewals",
+                            "client",
+                            application.UserId
+                        );
                     }
                 }
 
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Renewal notifications processed successfully." });
+                return Json(new { success = true, message = "Renewal notifications processed successfully.", applications = renewalApplications });
             }
             catch (Exception ex)
             {
@@ -101,7 +112,6 @@ namespace AreEyeP.Controllers
 
         private string GetUserEmail(int? userId)
         {
-            // Fetch user email based on userId from the Users table
             if (!userId.HasValue)
                 return null;
 
@@ -119,9 +129,16 @@ namespace AreEyeP.Controllers
         {
             try
             {
-                // Manually trigger renewal notifications
+                // Manually trigger renewal notifications and retrieve renewal applications
+                var today = DateTime.UtcNow.Date;
+
+                var renewalApplications = await _context.BurialApplications
+                    .Where(b => b.DateOfRenewal.HasValue && b.DateOfRenewal.Value.Date >= today)
+                    .ToListAsync();
+
                 await ProcessRenewalNotifications();
-                return Json(new { success = true, message = "Renewal notifications sent manually." });
+
+                return Json(new { success = true, message = "Renewal notifications sent successfully.", applications = renewalApplications });
             }
             catch (Exception ex)
             {

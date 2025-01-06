@@ -281,6 +281,38 @@
         </div>
     </div>
 
+    <div class="modal fade" id="renewalModal" tabindex="-1" aria-labelledby="renewalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renewalModalLabel">Applications Due for Renewal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Application ID</th>
+                                    <th>Applicant Name</th>
+                                    <th>Deceased Name</th>
+                                    <th>Date of Renewal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="renewalTableBody">
+                                <!-- Rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     @Html.Partial("_ScriptLinks")
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
@@ -522,7 +554,29 @@
                 .then(response => response.json())
                 .then(result => {
                     if (result.success) {
-                        alert("Renewal notifications sent successfully.");
+                        // Display the applications for renewal
+                        const renewalList = result.applications;
+                        if (renewalList.length > 0) {
+                            let tableRows = '';
+                            renewalList.forEach((application, index) => {
+                                tableRows += `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${application.applicationId}</td>
+                                        <td>${application.firstName} ${application.lastName}</td>
+                                        <td>${application.deceasedFirstName} ${application.deceasedLastName}</td>
+                                        <td>${new Date(application.dateOfRenewal).toLocaleDateString()}</td>
+                                    </tr>
+                                `;
+                            });
+
+                            // Populate the modal with the list of applications
+                            document.getElementById('renewalTableBody').innerHTML = tableRows;
+                            const renewalModal = new bootstrap.Modal(document.getElementById('renewalModal'));
+                            renewalModal.show();
+                        } else {
+                            alert("Renewal notifications sent successfully, but no applications are due for renewal.");
+                        }
                     } else {
                         alert("Failed to send renewal notifications: " + result.message);
                     }
