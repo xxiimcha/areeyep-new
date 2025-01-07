@@ -113,38 +113,32 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Proof of payment is required." });
                 }
 
-                // Update payment and application statuses based on the application status
+                // Update payment and application statuses
                 if (burialApplication.Status == "Pending Payment")
                 {
-                    // Update the specific payment record for the application
                     payment.Status = "For Review";
                     payment.PaymentMethod = model.PaymentMethod ?? "Unspecified";
                     payment.PaymentDate = DateTime.UtcNow;
 
                     burialApplication.Status = "Payment for Approval";
                 }
-                else if (burialApplication.Status == "For Renewal")
-                {
-                    // Find the renewal payment record and update it
-                    var renewalPayment = await _context.ClientPayments
-                        .FirstOrDefaultAsync(p => p.ApplicationId == burialApplication.Id && p.ServiceType == "Renewal" && p.Status == "Pending");
 
-                    if (renewalPayment != null)
-                    {
-                        renewalPayment.Status = "For Review";
-                        renewalPayment.PaymentDate = DateTime.UtcNow;
-                        renewalPayment.PaymentMethod = model.PaymentMethod ?? "Unspecified";
-                        renewalPayment.PaymentProof = payment.PaymentProof;
-                    }
-
-                    burialApplication.Status = "Payment for Approval";
-                }
-                else
+                // Create a notification for LGU
+                var notification = new Notification
                 {
-                    return Json(new { success = false, message = "Invalid application status for payment processing." });
-                }
+                    Message = $"A new e-payment for application {burialApplication.ApplicationId} has been processed for review.",
+                    TargetUser = "lgu",
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    NotificationType = "info",
+                    Type = "Payment"
+                };
+
+                _context.Notifications.Add(notification);
 
                 // Save changes to the database
+                _context.ClientPayments.Update(payment);
+                _context.BurialApplications.Update(burialApplication);
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Payment processed and application status updated successfully." });
@@ -221,6 +215,19 @@ namespace AreEyeP.Controllers
 
                 // Update the BurialApplication status
                 burialApplication.Status = "Payment for Approval";
+
+                // Create a notification for LGU
+                var notification = new Notification
+                {
+                    Message = $"A new payment receipt for application {burialApplication.ApplicationId} has been uploaded for review.",
+                    TargetUser = "lgu",
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    NotificationType = "info",
+                    Type = "Payment"
+                };
+
+                _context.Notifications.Add(notification);
 
                 // Save changes
                 _context.ClientPayments.Update(clientPayment);
