@@ -80,12 +80,11 @@ namespace AreEyeP.Controllers
     string staffName,
     string staffContact,
     bool isPaymentRequired,
-    string paymentOption,
     decimal? amountToBePaid)
         {
             try
             {
-                // Fetch the service request and handle null values
+                // Fetch the service request
                 var serviceRequest = await _context.ServiceRequests
                     .FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
 
@@ -94,10 +93,20 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Service request not found." });
                 }
 
+                // Fetch the related ApplicationId using the DeceasedId
+                var deceased = await _context.Deceased
+                    .FirstOrDefaultAsync(d => d.Id == int.Parse(serviceRequest.DeceasedId));
+
+                if (deceased == null || deceased.ApplicationId == 0)
+                {
+                    return Json(new { success = false, message = "Related deceased or application record not found." });
+                }
+
+                int applicationId = deceased.ApplicationId;
+
                 // Handle nullable fields
                 serviceRequest.Staff = string.IsNullOrWhiteSpace(staffName) ? "Unassigned" : staffName;
                 serviceRequest.StaffContact = string.IsNullOrWhiteSpace(staffContact) ? "N/A" : staffContact;
-                serviceRequest.ServiceType ??= "Unknown Service Type";
 
                 // Update service request fields
                 serviceRequest.Status = "Assigned";
@@ -110,37 +119,46 @@ namespace AreEyeP.Controllers
                     {
                         return Json(new { success = false, message = "Invalid payment amount. Please provide a valid amount." });
                     }
-                    // Set PaymentRequired to true
-                    serviceRequest.PaymentRequired = true;
 
-                    // Update Amount and PaymentOption fields in ServiceRequest
+                    serviceRequest.PaymentRequired = true;
                     serviceRequest.Amount = amountToBePaid.Value;
-                    serviceRequest.PaymentOption = paymentOption == "downPayment" ? "Down Payment" : "Full Payment";
 
                     var payment = new ClientPayment
                     {
                         UserId = serviceRequest.UserId,
-                        ApplicationId = serviceRequest.Id,
+                        ApplicationId = applicationId, // Use the ApplicationId from the Deceased record
                         ServiceRequestId = serviceRequest.Id,
                         Amount = amountToBePaid.Value,
-                        PaymentMethod = paymentOption == "downPayment" ? "Down Payment" : "Full Payment",
+                        PaymentMethod = "Pre-Service Payment", // Fixed payment method
                         Status = "Pending",
                         PaymentDate = DateTime.UtcNow,
-                        ServiceType = "Service Request",
-                        ReferenceNumber = Guid.NewGuid().ToString() // Generate unique reference number
+                        ServiceType = serviceRequest.ServiceType,
+                        ReferenceNumber = Guid.NewGuid().ToString()
                     };
 
                     _context.ClientPayments.Add(payment);
+
+                    var paymentNotification = new Notification
+                    {
+                        Message = $"You have a pending payment of ₱{amountToBePaid.Value} for your service request (ID: {serviceRequestId}).",
+                        TargetUser = "client",
+                        UserId = serviceRequest.UserId,
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false,
+                        NotificationType = "info",
+                        Type = "Payment"
+                    };
+
+                    _context.Notifications.Add(paymentNotification);
                 }
                 else
                 {
-                    // Ensure PaymentOption is reset if PaymentRequired is false
-                    serviceRequest.PaymentOption = "N/A";
-                    serviceRequest.Amount = 0; // Reset amount
-                    serviceRequest.PaymentRequired = false; // Reset payment requirement
+                    // Reset payment fields if payment is not required
+                    serviceRequest.PaymentRequired = false;
+                    serviceRequest.Amount = 0;
                 }
 
-                // Add notifications for client
+                // Add notification for client
                 var assignmentNotification = new Notification
                 {
                     Message = $"Staff {serviceRequest.Staff} has been assigned to your service request (ID: {serviceRequestId}).",
@@ -161,8 +179,11 @@ namespace AreEyeP.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception for debugging
                 Console.WriteLine($"An error occurred: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
                 return Json(new { success = false, message = "An error occurred while processing the request.", error = ex.Message });
             }
         }

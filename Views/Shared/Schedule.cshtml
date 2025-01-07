@@ -200,18 +200,7 @@
                             </div>
                         </div>
                         <div id="paymentOptions" style="display: none;">
-                            <div class="mb-3">
-                                <label class="form-label">Select Payment Option</label><br>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="paymentOption" id="downPayment" value="downPayment" onclick="toggleAmountField()">
-                                    <label class="form-check-label" for="downPayment">Down Payment</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="paymentOption" id="fullPayment" value="fullPayment" onclick="toggleAmountField()">
-                                    <label class="form-check-label" for="fullPayment">Full Payment</label>
-                                </div>
-                            </div>
-                            <div class="mb-3" id="amountToBePaidField" style="display: none;">
+                            <div class="mb-3" id="amountToBePaidField">
                                 <label for="amountToBePaid" class="form-label">Amount to be Paid</label>
                                 <input type="number" class="form-control" id="amountToBePaid" placeholder="Enter Amount" min="0" required>
                             </div>
@@ -270,11 +259,9 @@
             $('#staffName').val('');
             $('#staffContact').val('');
             $('input[name="paymentRequired"]').prop('checked', false);
-            $('input[name="paymentOption"]').prop('checked', false);
             $('#amountToBePaid').val('');
             $('#paymentOptions').hide();
             $('#paymentUponCompletion').hide();
-            $('#amountToBePaidField').hide();
 
             // Show the modal
             var viewModal = new bootstrap.Modal(document.getElementById('viewRequestModal'));
@@ -290,28 +277,16 @@
             } else {
                 $('#paymentOptions').hide();
                 $('#paymentUponCompletion').show();
-                $('#amountToBePaidField').hide();
             }
         }
 
-        // Function to toggle the amount to be paid field
-        function toggleAmountField() {
-            const paymentOption = $('input[name="paymentOption"]:checked').val();
-            if (paymentOption === 'downPayment' || paymentOption === 'fullPayment') {
-                $('#amountToBePaidField').show();
-            } else {
-                $('#amountToBePaidField').hide();
-            }
-        }
-
-                // Function to handle assigning staff
+        // Function to handle assigning staff
         function assignStaff() {
             // Capture input data
             const serviceRequestId = $('#viewRequestModal').data('requestId'); // Capture the serviceRequestId correctly
             const staffName = $('#staffName').val();
             const staffContact = $('#staffContact').val();
             const paymentRequired = $('input[name="paymentRequired"]:checked').val() === 'yes';
-            const paymentOption = $('input[name="paymentOption"]:checked').val();
             const amountToBePaid = $('#amountToBePaid').val();
 
             // Log serviceRequestId to make sure it is not undefined
@@ -328,7 +303,6 @@
                         staffName: staffName,
                         staffContact: staffContact,
                         isPaymentRequired: paymentRequired,
-                        paymentOption: paymentOption,
                         amountToBePaid: amountToBePaid
                     },
                     success: function (result) {
