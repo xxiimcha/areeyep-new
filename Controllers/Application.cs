@@ -239,13 +239,6 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Application record not found." });
                 }
 
-                // Fetch user email
-                var user = _context.Users.FirstOrDefault(u => u.Id == application.UserId);
-                if (user == null)
-                {
-                    return Json(new { success = false, message = "User record not found." });
-                }
-
                 // Fetch payment record
                 var payment = _context.ClientPayments.FirstOrDefault(p => p.ApplicationId == applicationId);
                 if (payment == null)
@@ -258,22 +251,77 @@ namespace AreEyeP.Controllers
                 payment.Status = "Completed";
                 _context.SaveChanges();
 
-                // Send approval email
-                try
+                // Insert deceased information into Deceased table
+                var deceased = new Deceased
                 {
-                    string subject = "Application Approved";
-                    string body = GenerateApprovalEmailBody(application);
+                    FirstName = application.DeceasedFirstName,
+                    LastName = application.DeceasedLastName,
+                    DateOfBirth = application.DateOfBirth,
+                    DateOfDeath = application.DateOfDeath,
+                    Address = application.Address,
+                    CauseOfDeath = application.CauseOfDeath,
+                    Gender = application.Gender,
+                    ApplicationId = application.Id
+                };
 
-                    AreEyeP.Helpers.EmailHelper.SendEmail(user.Email, subject, body);
-                }
-                catch (Exception ex)
+                _context.Deceased.Add(deceased);
+                _context.SaveChanges();
+
+                // Retrieve the ID of the newly added deceased record
+                int deceasedId = deceased.Id;
+
+                // Assign a random available catacomb to the deceased
+                var availableCatacomb = _context.Catacombs
+                    .Where(c => c.AvailabilityStatus == "Available")
+                    .OrderBy(c => Guid.NewGuid())
+                    .FirstOrDefault();
+
+                if (availableCatacomb != null)
                 {
-                    Console.WriteLine($"Error sending email: {ex.Message}");
+                    availableCatacomb.AvailabilityStatus = "Occupied";
+                    availableCatacomb.DeceasedInformation = deceasedId.ToString();
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    return Json(new { success = false, message = "No available catacombs to assign." });
                 }
 
-                // Continue with the rest of the method...
+                // Insert a notification for the client
+                var notification = new Notification
+                {
+                    Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} has been approved. Assigned Catacomb: {availableCatacomb?.Id}",
+                    TargetUser = "client", // Set target user type as "Client"
+                    UserId = application.UserId, // Populate UserId for the specific client
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    NotificationType = "info",
+                    Type = "Application"
+                };
 
-                return Json(new { success = true, message = "Application completed, statuses updated, catacomb assigned, and notification sent to the client." });
+                _context.Notifications.Add(notification);
+                _context.SaveChanges();
+
+                // Fetch user email
+                var user = _context.Users.FirstOrDefault(u => u.Id == application.UserId);
+                if (user != null)
+                {
+                    try
+                    {
+                        // Prepare email content
+                        string subject = "Application Approved";
+                        string body = GenerateApprovalEmailBody(application);
+
+                        // Send email to the user
+                        AreEyeP.Helpers.EmailHelper.SendEmail(user.Email, subject, body);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending email: {ex.Message}");
+                    }
+                }
+
+                return Json(new { success = true, message = "Application completed, statuses updated, catacomb assigned, email sent, and notification sent to the client." });
             }
             catch (Exception ex)
             {
