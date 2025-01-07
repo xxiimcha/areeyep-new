@@ -117,8 +117,8 @@ namespace AreEyeP.Controllers
                                     subject = "Payment Pending for Application";
                                     body = GeneratePaymentPendingEmailBody(application, model.Amount.Value);
 
-                                    // Insert a notification for the client
-                                    var paymentNotification = new Notification
+                                    // Insert a notification for the client (Type = Application)
+                                    var applicationNotification = new Notification
                                     {
                                         Message = $"Your application for {application.DeceasedFirstName} {application.DeceasedLastName} is now pending payment. Amount due: ₱{model.Amount.Value}.",
                                         TargetUser = "client",
@@ -127,6 +127,20 @@ namespace AreEyeP.Controllers
                                         IsRead = false,
                                         NotificationType = "info",
                                         Type = "Application"
+                                    };
+
+                                    _context.Notifications.Add(applicationNotification);
+
+                                    // Insert a notification for the client (Type = Payment)
+                                    var paymentNotification = new Notification
+                                    {
+                                        Message = $"You have a pending payment of ₱{model.Amount.Value} for the burial application of {application.DeceasedFirstName} {application.DeceasedLastName}.",
+                                        TargetUser = "client",
+                                        UserId = application.UserId,
+                                        CreatedAt = DateTime.UtcNow,
+                                        IsRead = false,
+                                        NotificationType = "info",
+                                        Type = "Payment"
                                     };
 
                                     _context.Notifications.Add(paymentNotification);

@@ -49,7 +49,7 @@ namespace AreEyeP.Controllers
             {
                 { "Application", notifications.Where(n => n.Type == "Application") },
                 { "ServiceRequests", notifications.Where(n => n.Type == "Service Request") },
-                { "Payments", notifications.Where(n => n.Type == "Payments") },
+                { "Payments", notifications.Where(n => n.Type == "Payment") },
                 { "Renewals", notifications.Where(n => n.Type == "Renewals") }
             };
 
