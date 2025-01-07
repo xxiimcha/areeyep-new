@@ -76,14 +76,13 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Reference Number is required." });
                 }
 
-                // Retrieve payment record using ReferenceNumber
+                // Retrieve the associated burial application using ReferenceNumber
                 var payment = await _context.ClientPayments.FirstOrDefaultAsync(p => p.ReferenceNumber == model.ReferenceNumber);
                 if (payment == null)
                 {
                     return Json(new { success = false, message = "Payment not found." });
                 }
 
-                // Retrieve the associated burial application using the ApplicationId
                 var burialApplication = await _context.BurialApplications.FirstOrDefaultAsync(b => b.Id == payment.ApplicationId);
                 if (burialApplication == null)
                 {
@@ -93,45 +92,59 @@ namespace AreEyeP.Controllers
                 // Handle proof of payment upload
                 if (paymentProof != null && paymentProof.Length > 0)
                 {
-                    try
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/proofs");
+                    if (!Directory.Exists(uploadsFolder))
                     {
-                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/proofs");
-                        if (!Directory.Exists(uploadsFolder))
-                        {
-                            Directory.CreateDirectory(uploadsFolder);
-                        }
-
-                        var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(paymentProof.FileName);
-                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                        using (var fileStream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await paymentProof.CopyToAsync(fileStream);
-                        }
-
-                        payment.PaymentProof = "/uploads/proofs/" + uniqueFileName; // Save path in the database
+                        Directory.CreateDirectory(uploadsFolder);
                     }
-                    catch (Exception fileEx)
+
+                    var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(paymentProof.FileName);
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
                     {
-                        return Json(new { success = false, message = "Failed to upload proof of payment.", error = fileEx.Message });
+                        await paymentProof.CopyToAsync(fileStream);
                     }
+
+                    payment.PaymentProof = "/uploads/proofs/" + uniqueFileName; // Save path in the database
                 }
                 else
                 {
                     return Json(new { success = false, message = "Proof of payment is required." });
                 }
 
-                // Update payment record
-                payment.Status = "For Review";
-                payment.PaymentMethod = model.PaymentMethod ?? "Unspecified";
-                payment.PaymentDate = DateTime.Now;
+                // Update payment and application statuses based on the application status
+                if (burialApplication.Status == "Pending Payment")
+                {
+                    // Update the specific payment record for the application
+                    payment.Status = "For Review";
+                    payment.PaymentMethod = model.PaymentMethod ?? "Unspecified";
+                    payment.PaymentDate = DateTime.UtcNow;
 
-                // Update the BurialApplications status
-                burialApplication.Status = "Payment for Approval";
+                    burialApplication.Status = "Payment for Approval";
+                }
+                else if (burialApplication.Status == "For Renewal")
+                {
+                    // Find the renewal payment record and update it
+                    var renewalPayment = await _context.ClientPayments
+                        .FirstOrDefaultAsync(p => p.ApplicationId == burialApplication.Id && p.ServiceType == "Renewal" && p.Status == "Pending");
 
-                // Save changes to both tables
-                _context.ClientPayments.Update(payment);
-                _context.BurialApplications.Update(burialApplication);
+                    if (renewalPayment != null)
+                    {
+                        renewalPayment.Status = "For Review";
+                        renewalPayment.PaymentDate = DateTime.UtcNow;
+                        renewalPayment.PaymentMethod = model.PaymentMethod ?? "Unspecified";
+                        renewalPayment.PaymentProof = payment.PaymentProof;
+                    }
+
+                    burialApplication.Status = "Payment for Approval";
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Invalid application status for payment processing." });
+                }
+
+                // Save changes to the database
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Payment processed and application status updated successfully." });
@@ -157,8 +170,6 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "No receipt file uploaded." });
                 }
 
-                Console.WriteLine($"Received BurialApplication ID: {burialId}");
-
                 // Retrieve the burial application by Id
                 var burialApplication = await _context.BurialApplications
                     .FirstOrDefaultAsync(b => b.Id == burialId);
@@ -168,9 +179,19 @@ namespace AreEyeP.Controllers
                     return Json(new { success = false, message = "Burial application not found." });
                 }
 
-                // Retrieve the associated client payment using ApplicationId from BurialApplication
-                var clientPayment = await _context.ClientPayments
-                    .FirstOrDefaultAsync(p => p.ApplicationId == burialApplication.Id);
+                // Retrieve client payment based on status and service type
+                ClientPayment clientPayment = null;
+
+                if (burialApplication.Status == "Pending Payment")
+                {
+                    clientPayment = await _context.ClientPayments
+                        .FirstOrDefaultAsync(p => p.ApplicationId == burialApplication.Id && p.ServiceType == "Burial" && p.Status == "Pending");
+                }
+                else if (burialApplication.Status == "For Renewal")
+                {
+                    clientPayment = await _context.ClientPayments
+                        .FirstOrDefaultAsync(p => p.ApplicationId == burialApplication.Id && p.ServiceType == "Renewal" && p.Status == "Pending");
+                }
 
                 if (clientPayment == null)
                 {
@@ -196,11 +217,14 @@ namespace AreEyeP.Controllers
                 clientPayment.PaymentProof = "/uploads/receipts/" + uniqueFileName;
                 clientPayment.PaymentMethod = "Walk-in";
                 clientPayment.Status = "For Review";
+                clientPayment.PaymentDate = DateTime.UtcNow;
 
                 // Update the BurialApplication status
                 burialApplication.Status = "Payment for Approval";
 
                 // Save changes
+                _context.ClientPayments.Update(clientPayment);
+                _context.BurialApplications.Update(burialApplication);
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Receipt uploaded successfully and statuses updated." });
