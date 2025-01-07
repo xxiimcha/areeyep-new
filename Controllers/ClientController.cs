@@ -230,7 +230,12 @@ namespace AreEyeP.Controllers
                                                 sr.SpecialInstructions,
                                                 Staff = sr.Staff ?? "N/A",
                                                 StaffContact = sr.StaffContact ?? "N/A",
-                                                PaymentMessage = sr.PaymentRequired ? "Payment is required" : "Pay upon completion"
+                                                PaymentMessage = sr.PaymentRequired ? "Payment is required" : "Pay upon completion",
+                                                Amount = _context.ClientPayments
+                                                    .Where(cp => cp.ServiceRequestId == sr.Id)
+                                                    .OrderByDescending(cp => cp.PaymentDate)
+                                                    .Select(cp => cp.Amount)
+                                                    .FirstOrDefault() // Get the latest payment amount
                                             }).FirstOrDefaultAsync();
 
                 if (serviceRequest == null)
@@ -247,11 +252,23 @@ namespace AreEyeP.Controllers
                 return Json(new { success = false, message = "An error occurred while fetching the details." });
             }
         }
+
         [HttpPost]
         public async Task<IActionResult> MakePayment(int serviceRequestId, decimal amount, string paymentMethod, IFormFile paymentProof)
         {
             try
             {
+                // Validate the input parameters
+                if (amount <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid payment amount." });
+                }
+
+                if (string.IsNullOrEmpty(paymentMethod))
+                {
+                    return Json(new { success = false, message = "Payment method is required." });
+                }
+
                 // Find the service request
                 var serviceRequest = await _context.ServiceRequests.FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
 
@@ -277,7 +294,13 @@ namespace AreEyeP.Controllers
                 // Handle payment proof upload if provided
                 if (paymentProof != null && paymentProof.Length > 0)
                 {
-                    var filePath = Path.Combine("uploads/payment-proofs", Guid.NewGuid() + Path.GetExtension(paymentProof.FileName));
+                    var uploadDirectory = Path.Combine("uploads/payment-proofs");
+                    if (!Directory.Exists(uploadDirectory))
+                    {
+                        Directory.CreateDirectory(uploadDirectory);
+                    }
+
+                    var filePath = Path.Combine(uploadDirectory, Guid.NewGuid() + Path.GetExtension(paymentProof.FileName));
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await paymentProof.CopyToAsync(stream);
@@ -296,12 +319,14 @@ namespace AreEyeP.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error updating payment: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 return Json(new { success = false, message = "An error occurred while updating the payment." });
             }
         }
 
-        [HttpGet]
-        public IActionResult GetPaymentMethods()
+
+        [HttpGet("/Client/GetPaymentMethods/{serviceRequestId}")]
+        public IActionResult GetPaymentMethods(int serviceRequestId)
         {
             try
             {
@@ -316,14 +341,20 @@ namespace AreEyeP.Controllers
                     })
                     .ToList();
 
-                return Json(new { success = true, methods = paymentMethods });
+                // Fetch the amount to be paid for the specific ServiceRequestId
+                var paymentAmount = _context.ClientPayments
+                    .Where(cp => cp.ServiceRequestId == serviceRequestId)
+                    .OrderByDescending(cp => cp.PaymentDate)
+                    .Select(cp => cp.Amount)
+                    .FirstOrDefault();
+
+                return Json(new { success = true, methods = paymentMethods, amount = paymentAmount });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error fetching payment methods: {ex.Message}");
-                return Json(new { success = false, message = "Failed to fetch payment methods." });
+                return Json(new { success = false, message = "Failed to fetch payment methods or payment amount." });
             }
         }
-
     }
 }
