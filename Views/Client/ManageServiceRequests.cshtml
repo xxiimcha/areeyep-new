@@ -98,44 +98,88 @@
             </main>
         </div>
     </div>
-    <!-- Modal for Payment -->
+
+    <!-- Payment Modal -->
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="paymentModalLabel">Make Payment</h5>
+                    <h5 class="modal-title" id="paymentModalLabel">Add Payment</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="paymentForm" enctype="multipart/form-data">
-                        <input type="hidden" id="ServiceRequestId" name="ServiceRequestId" />
+                    <div class="row">
+                        <!-- Walk-in Payment Column -->
+                        <div class="col-md-6">
+                            <h5 class="text-center">Walk-in Payment</h5>
+                            <form id="walkInPaymentForm" enctype="multipart/form-data">
+                                <input type="hidden" id="ServiceRequestId" name="ServiceRequestId" />
+                                <div class="mb-3">
+                                    <label for="uploadReceipt" class="form-label">Upload Receipt:</label>
+                                    <input type="file" class="form-control" id="uploadReceipt" name="uploadReceipt" accept="image/*">
+                                </div>
+                                <div class="mb-3 text-center">
+                                    <img id="previewImage" src="#" alt="Receipt Preview" style="display: none; max-width: 100%; height: auto; border: 1px solid #ddd;" />
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Submit</button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- E-payment Column -->
+                        <div class="col-md-6 border-start">
+                            <h5 class="text-center">E-payment</h5>
+                            <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+                                <button class="btn btn-success" id="proceedToEPayment" onclick="loadPaymentMethodsAndShowModal();">Proceed to E-payment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- E-payment Modal -->
+    <div class="modal fade" id="ePaymentModal" tabindex="-1" aria-labelledby="ePaymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="ePaymentModalLabel">Proceed to E-payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="ePaymentForm">
                         <div class="mb-3">
                             <label for="Amount" class="form-label">Amount</label>
-                            <input type="text" class="form-control" id="Amount" name="Amount" readonly />
+                            <input type="number" class="form-control" id="Amount" name="Amount" readonly />
                         </div>
                         <div class="mb-3">
                             <label for="PaymentMethod" class="form-label">Payment Method</label>
-                            <select class="form-select" id="PaymentMethod" name="PaymentMethod" required>
-                                <!-- Options will be dynamically populated -->
-                            </select>
-                        </div>
-                        <div id="paymentDetails" class="mb-3">
-                            <!-- Bank name, account number, and QR code will be dynamically displayed -->
+                            <div id="paymentMethodsContainer"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="PaymentProof" class="form-label">Upload Payment Proof</label>
-                            <input type="file" class="form-control" id="PaymentProof" name="PaymentProof" required />
+                            <label for="accountNumber" class="form-label">Account Number</label>
+                            <input type="text" class="form-control" id="accountNumber" readonly />
                         </div>
+                        <div class="mb-3">
+                            <label for="accountName" class="form-label">Account Name</label>
+                            <input type="text" class="form-control" id="accountName" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label for="paymentProof" class="form-label">Proof of Payment</label>
+                            <input type="file" class="form-control" id="paymentProof" name="paymentProof" required />
+                        </div>
+                        <div id="qrCodeContainer" class="mt-2"></div>
                         <div class="d-flex justify-content-end">
-                            <button type="button" class="btn btn-success" onclick="submitPayment()">Submit Payment</button>
-                            <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Submit</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-
 
     <!-- Modal for Viewing Service Request -->
     <div class="modal fade" id="viewServiceRequestModal" tabindex="-1" aria-labelledby="viewServiceRequestModalLabel" aria-hidden="true">
@@ -160,107 +204,179 @@
 
     @Html.Partial("_ScriptLinks")
     <script>
-        function submitPayment() {
-            const formData = new FormData(document.getElementById("paymentForm"));
+        function openPaymentModal(serviceRequestId, amount) {
+            // Set the ServiceRequestId and Amount in the form inputs
+            $('#ServiceRequestId').val(serviceRequestId);
+            $('#Amount').val(amount);
 
-            fetch("/Client/MakePayment", {
-                method: "POST",
-                body: formData,
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        alert(data.message);
-                        // Redirect to the service requests page
-                        location.href = "/Client/ServiceRequest/Requests";
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error submitting payment:", error);
-                    alert("An error occurred while processing your payment. Please try again.");
-                });
+            $('#paymentModal').modal('show');
         }
 
-        function openPaymentModal(serviceRequestId) {
-            document.getElementById("ServiceRequestId").value = serviceRequestId;
-
-            // Fetch the payment methods and amount dynamically
-            fetch(`/Client/GetPaymentMethods/${serviceRequestId}`)
+        function loadPaymentMethodsAndShowModal() {
+            fetch('/Payment/GetPaymentMethods')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        // Populate the amount
-                        const amountField = document.getElementById("Amount");
-                        if (data.amount && data.amount > 0) {
-                            amountField.value = data.amount.toFixed(2);
-                        } else {
-                            amountField.value = "0.00";
-                        }
+                    console.log(data); // Debug response
+                    const paymentMethodsContainer = $('#paymentMethodsContainer');
+                    const accountNumber = $('#accountNumber');
+                    const accountName = $('#accountName');
+                    const qrCodeContainer = $('#qrCodeContainer');
 
-                        // Populate payment methods
-                        const paymentMethodDropdown = document.getElementById("PaymentMethod");
-                        const paymentDetailsDiv = document.getElementById("paymentDetails");
-                        paymentMethodDropdown.innerHTML = ""; // Clear existing options
-                        paymentDetailsDiv.innerHTML = ""; // Clear existing details
+                    paymentMethodsContainer.empty();
+                    accountNumber.val('');
+                    accountName.val('');
+                    qrCodeContainer.empty();
 
-                        data.methods.forEach(method => {
-                            const option = document.createElement("option");
-                            option.value = method.paymentMode;
-                            option.textContent = `${method.paymentMode} (${method.bankName || "N/A"})`;
-                            paymentMethodDropdown.appendChild(option);
+                    if (data.success && Array.isArray(data.paymentMethods)) {
+                        data.paymentMethods.forEach((method, index) => {
+                            const radioId = `paymentMethod_${index}`;
+                            const paymentOption = `
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="${radioId}"
+                                        data-account-number="${method.accountNumber || 'N/A'}"
+                                        data-account-name="${method.bankName || 'N/A'}"
+                                        data-qr-code="${method.qrCodePath || ''}" value="${method.paymentMode}">
+                                    <label class="form-check-label" for="${radioId}">
+                                        ${method.paymentMode} (${method.bankName || 'N/A'})
+                                    </label>
+                                </div>
+                            `;
+                            paymentMethodsContainer.append(paymentOption);
+                        });
+
+                        $('input[name="paymentMethod"]').on('change', function () {
+                            const selected = $(this);
+                            accountNumber.val(selected.data('account-number'));
+                            accountName.val(selected.data('account-name'));
+
+                            const qrCode = selected.data('qr-code');
+                            qrCodeContainer.html(qrCode ? `<img src="${qrCode}" class="img-fluid" alt="QR Code">` : '<p>No QR Code available.</p>');
                         });
                     } else {
-                        alert("Failed to load payment details. Please try again.");
+                        paymentMethodsContainer.html('<p>No payment methods available.</p>');
                     }
                 })
                 .catch(error => {
-                    console.error("Error fetching payment details:", error);
-                    alert("An error occurred while loading payment details.");
+                    console.error('Error fetching payment methods:', error);
+                    $('#paymentMethodsContainer').html('<p>Failed to load payment methods. Please try again later.</p>');
                 });
+
+            $('#ePaymentModal').modal('show');
         }
 
-        // Function to load service request details dynamically
+
+        $('#walkInPaymentForm').on('submit', function (e) {
+            e.preventDefault();
+            const serviceRequestId = $('#ServiceRequestId').val();
+            const amount = $('#Amount').val();
+            const uploadReceipt = $('#uploadReceipt')[0].files[0];
+
+            if (!uploadReceipt) {
+                alert('Please upload a receipt.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('serviceRequestId', serviceRequestId);
+            formData.append('amount', amount);
+            formData.append('uploadReceipt', uploadReceipt);
+
+            fetch('/ServiceRequest/SubmitWalkInPayment', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert(data.message || 'An error occurred while processing the walk-in payment.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error processing walk-in payment:', error);
+                    alert('An error occurred while processing the walk-in payment.');
+                });
+        });
+
+        $('#ePaymentForm').on('submit', function (e) {
+            e.preventDefault();
+            const serviceRequestId = $('#ServiceRequestId').val();
+            const amount = $('#Amount').val();
+            const paymentMethod = $('input[name="paymentMethod"]:checked').val();
+            const paymentProof = $('#paymentProof')[0].files[0];
+
+            if (!paymentMethod) {
+                alert('Please select a payment method.');
+                return;
+            }
+
+            if (!paymentProof) {
+                alert('Please upload proof of payment.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('serviceRequestId', serviceRequestId);
+            formData.append('amount', amount);
+            formData.append('paymentMethod', paymentMethod);
+            formData.append('paymentProof', paymentProof);
+
+            fetch('/ServiceRequest/SubmitEPayment', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert(data.message || 'An error occurred while processing the e-payment.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error processing e-payment:', error);
+                    alert('An error occurred while processing the e-payment.');
+                });
+        });
+
         function loadServiceRequestDetails(id) {
             const modalBody = document.getElementById("serviceRequestDetails");
 
-            // Show a loading message while fetching data
             modalBody.innerHTML = "<p>Loading...</p>";
 
-            // Fetch the service request details
             fetch(`/Client/GetServiceRequestDetails/${id}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         const request = data.serviceRequest;
 
-                        // Create modal content dynamically
                         let content = `
-                            <dl class="row">
-                                <dt class="col-sm-4">Service Type:</dt>
-                                <dd class="col-sm-8">${request.serviceType}</dd>
-                                <dt class="col-sm-4">Date of Service:</dt>
-                                <dd class="col-sm-8">${new Date(request.dateOfService).toLocaleDateString()}</dd>
-                                <dt class="col-sm-4">Urgency Level:</dt>
-                                <dd class="col-sm-8">${request.urgencyLevel}</dd>
-                                <dt class="col-sm-4">Status:</dt>
-                                <dd class="col-sm-8">${request.status}</dd>
-                                <dt class="col-sm-4">Special Instructions:</dt>
-                                <dd class="col-sm-8">${request.specialInstructions || "N/A"}</dd>
-                                <dt class="col-sm-4">Payment:</dt>
-                                <dd class="col-sm-8">${request.paymentMessage}</dd>
-                            </dl>`;
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Service Type:</dt>
+                                        <dd class="col-sm-8">${request.serviceType}</dd>
+                                        <dt class="col-sm-4">Date of Service:</dt>
+                                        <dd class="col-sm-8">${new Date(request.dateOfService).toLocaleDateString()}</dd>
+                                        <dt class="col-sm-4">Urgency Level:</dt>
+                                        <dd class="col-sm-8">${request.urgencyLevel}</dd>
+                                        <dt class="col-sm-4">Status:</dt>
+                                        <dd class="col-sm-8">${request.status}</dd>
+                                        <dt class="col-sm-4">Special Instructions:</dt>
+                                        <dd class="col-sm-8">${request.specialInstructions || "N/A"}</dd>
+                                        <dt class="col-sm-4">Payment:</dt>
+                                        <dd class="col-sm-8">${request.paymentMessage}</dd>
+                                    </dl>`;
 
-                        // Add Staff and StaffContact only when Status is not "Pending"
                         if (request.status.toLowerCase() !== "pending") {
                             content += `
-                                <dl class="row">
-                                    <dt class="col-sm-4">Staff:</dt>
-                                    <dd class="col-sm-8">${request.staff}</dd>
-                                    <dt class="col-sm-4">Staff Contact:</dt>
-                                    <dd class="col-sm-8">${request.staffContact}</dd>
-                                </dl>`;
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Staff:</dt>
+                                            <dd class="col-sm-8">${request.staff}</dd>
+                                            <dt class="col-sm-4">Staff Contact:</dt>
+                                            <dd class="col-sm-8">${request.staffContact}</dd>
+                                        </dl>`;
                         }
 
                         modalBody.innerHTML = content;
@@ -273,7 +389,6 @@
                     modalBody.innerHTML = `<p class="text-danger">An error occurred while loading the details.</p>`;
                 });
         }
-
     </script>
 </body>
 </html>

@@ -132,7 +132,7 @@ namespace AreEyeP.Controllers
                         PaymentMethod = "Pre-Service Payment", // Fixed payment method
                         Status = "Pending",
                         PaymentDate = DateTime.UtcNow,
-                        ServiceType = serviceRequest.ServiceType,
+                        ServiceType = "Services",
                         ReferenceNumber = Guid.NewGuid().ToString()
                     };
 
@@ -241,6 +241,159 @@ namespace AreEyeP.Controllers
             {
                 Console.WriteLine($"Error processing payment: {ex.Message}");
                 return Json(new { success = false, message = "An error occurred while processing the payment." });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddPayment([FromForm] Payment payment, [FromForm] IFormFile QrCode)
+        {
+            try
+            {
+                ModelState.Remove("QrCodePath");
+
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage).ToList();
+                    return BadRequest(new { success = false, message = "Validation failed.", errors });
+                }
+
+                var uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "payment-methods");
+
+                if (!Directory.Exists(uploadDirectory))
+                {
+                    Directory.CreateDirectory(uploadDirectory);
+                }
+
+                if (QrCode != null && QrCode.Length > 0)
+                {
+                    var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(QrCode.FileName)}";
+                    var filePath = Path.Combine(uploadDirectory, uniqueFileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await QrCode.CopyToAsync(stream);
+                    }
+
+                    payment.QrCodePath = $"/uploads/payment-methods/{uniqueFileName}";
+                }
+                else
+                {
+                    payment.QrCodePath = null;
+                }
+
+                _context.Payments.Add(payment);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Payment details uploaded successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = "An error occurred while processing the payment.", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitWalkInPayment(int serviceRequestId, decimal amount, IFormFile uploadReceipt)
+        {
+            try
+            {
+                var clientPayment = await _context.ClientPayments.FirstOrDefaultAsync(cp => cp.ServiceRequestId == serviceRequestId);
+
+                if (clientPayment == null)
+                {
+                    return Json(new { success = false, message = "Service request not found." });
+                }
+
+                if (uploadReceipt == null || uploadReceipt.Length == 0)
+                {
+                    return Json(new { success = false, message = "Receipt upload is required." });
+                }
+
+                var uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "receipts");
+                if (!Directory.Exists(uploadDirectory))
+                {
+                    Directory.CreateDirectory(uploadDirectory);
+                }
+
+                var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(uploadReceipt.FileName)}";
+                var filePath = Path.Combine(uploadDirectory, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadReceipt.CopyToAsync(stream);
+                }
+
+                clientPayment.Amount = amount;
+                clientPayment.PaymentMethod = "Walk-in";
+                clientPayment.Status = "For Review";
+                clientPayment.PaymentDate = DateTime.UtcNow;
+                clientPayment.PaymentProof = $"/uploads/receipts/{uniqueFileName}";
+
+                _context.ClientPayments.Update(clientPayment);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Walk-in payment submitted successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred while processing the walk-in payment.", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitEPayment(int serviceRequestId, decimal amount, string paymentMethod, IFormFile paymentProof)
+        {
+            try
+            {
+                var clientPayment = await _context.ClientPayments.FirstOrDefaultAsync(cp => cp.ServiceRequestId == serviceRequestId);
+
+                if (clientPayment == null)
+                {
+                    return Json(new { success = false, message = "Service request not found." });
+                }
+
+                if (paymentProof == null || paymentProof.Length == 0)
+                {
+                    return Json(new { success = false, message = "Proof of payment is required." });
+                }
+
+                var uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "payment-proofs");
+                if (!Directory.Exists(uploadDirectory))
+                {
+                    Directory.CreateDirectory(uploadDirectory);
+                }
+
+                var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(paymentProof.FileName)}";
+                var filePath = Path.Combine(uploadDirectory, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await paymentProof.CopyToAsync(stream);
+                }
+
+                clientPayment.Amount = amount;
+                clientPayment.PaymentMethod = paymentMethod;
+                clientPayment.Status = "Completed";
+                clientPayment.PaymentDate = DateTime.UtcNow;
+                clientPayment.PaymentProof = $"/uploads/payment-proofs/{uniqueFileName}";
+
+                _context.ClientPayments.Update(clientPayment);
+                var serviceRequest = await _context.ServiceRequests.FirstOrDefaultAsync(sr => sr.Id == serviceRequestId);
+                if (serviceRequest != null)
+                {
+                    serviceRequest.PaymentRequired = false;
+                    _context.ServiceRequests.Update(serviceRequest);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "E-payment submitted successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred while processing the e-payment.", error = ex.Message });
             }
         }
 
