@@ -171,6 +171,7 @@ namespace AreEyeP.Controllers
                                       sr.UrgencyLevel,
                                       sr.Status,
                                       sr.Staff,
+                                      sr.SpecialInstructions, // Include SpecialInstructions here
                                       StartTime = sr.StartTime != null ? sr.StartTime : (TimeSpan?)null,  // Handle nullable TimeSpan
                                       EndTime = sr.EndTime != null ? sr.EndTime : (TimeSpan?)null          // Handle nullable TimeSpan
                                   };
