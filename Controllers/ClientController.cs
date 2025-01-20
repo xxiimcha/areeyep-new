@@ -191,22 +191,28 @@ namespace AreEyeP.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            // Fetch deceased records linked to the logged-in user
+            // Fetch deceased records linked to the logged-in user along with the DateOfRenewal from BurialApplications
             var relatives = await _context.Deceased
                 .Where(d => _context.BurialApplications
                     .Any(b => b.Id == d.ApplicationId && b.UserId == userId))
-                .Select(d => new
-                {
-                    d.Id,
-                    d.FirstName,
-                    d.LastName,
-                    d.DateOfBirth,
-                    d.DateOfDeath,
-                    d.Address,
-                    d.CauseOfDeath,
-                    d.Gender,
-                    d.ApplicationId
-                })
+                .Join(
+                    _context.BurialApplications,
+                    d => d.ApplicationId,
+                    b => b.Id,
+                    (d, b) => new
+                    {
+                        d.Id,
+                        d.FirstName,
+                        d.LastName,
+                        d.DateOfBirth,
+                        d.DateOfDeath,
+                        d.Address,
+                        d.CauseOfDeath,
+                        d.Gender,
+                        d.ApplicationId,
+                        DateOfRenewal = b.DateOfRenewal // Include DateOfRenewal from BurialApplications
+                    }
+                )
                 .ToListAsync();
 
             return View("ManageRelatives", relatives);

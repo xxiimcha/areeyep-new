@@ -54,6 +54,7 @@
                                         <th>Cause of Death</th>
                                         <th>Gender</th>
                                         <th>Application ID</th>
+                                        <th>Date of Renewal</th> <!-- New Column -->
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -72,6 +73,7 @@
                                                 <td>@relative.CauseOfDeath</td>
                                                 <td>@relative.Gender</td>
                                                 <td>@relative.ApplicationId</td>
+                                                <td>@relative.DateOfRenewal?.ToString("yyyy-MM-dd")</td> <!-- Display Date of Renewal -->
                                             </tr>
                                             i++;
                                         }
@@ -79,7 +81,7 @@
                                     else
                                     {
                                         <tr>
-                                            <td colspan="9" class="text-center">No relatives found linked to your account.</td>
+                                            <td colspan="10" class="text-center">No relatives found linked to your account.</td>
                                         </tr>
                                     }
                                 </tbody>
