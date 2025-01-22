@@ -179,51 +179,15 @@ namespace AreEyeP.Controllers
             {
                 Document pdfDoc = new Document(PageSize.A4, 25, 25, 30, 30);
                 PdfWriter writer = PdfWriter.GetInstance(pdfDoc, stream);
+                writer.PageEvent = new PdfPageNumberHelper(); // Correct the assignment
                 pdfDoc.Open();
 
-                // Add the system name and logo
-                PdfPTable headerTable = new PdfPTable(2);
-                headerTable.WidthPercentage = 100;
-                headerTable.SetWidths(new float[] { 1, 4 });
-
-                // Add logo
-                string logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "logo.png");
-                if (System.IO.File.Exists(logoPath))
-                {
-                    Image logo = Image.GetInstance(logoPath);
-                    logo.ScaleToFit(50f, 50f);
-                    PdfPCell logoCell = new PdfPCell(logo) { Border = Rectangle.NO_BORDER, HorizontalAlignment = Element.ALIGN_LEFT };
-                    headerTable.AddCell(logoCell);
-                }
-                else
-                {
-                    // Debugging information
-                    Console.WriteLine($"Logo not found at {logoPath}");
-                    PdfPCell placeholderCell = new PdfPCell(new Phrase("Logo Missing")) { Border = Rectangle.NO_BORDER, HorizontalAlignment = Element.ALIGN_LEFT };
-                    headerTable.AddCell(placeholderCell);
-                }
-
-                // Add system name
-                PdfPCell titleCell = new PdfPCell(new Phrase("AreEyeP Reports", new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD)))
-                {
-                    Border = Rectangle.NO_BORDER,
-                    HorizontalAlignment = Element.ALIGN_LEFT,
-                    VerticalAlignment = Element.ALIGN_MIDDLE
-                };
-                headerTable.AddCell(titleCell);
-
-                pdfDoc.Add(headerTable);
-                pdfDoc.Add(new Paragraph(" ")); // Empty line
-
-                // Add generation date
-                pdfDoc.Add(new Paragraph($"Generated on: {DateTime.Now.ToString("MMMM dd, yyyy")}", new Font(Font.FontFamily.HELVETICA, 10)));
-                pdfDoc.Add(new Paragraph(" ")); // Empty line
+                // Add Cover Page
+                AddCoverPage(pdfDoc);
 
                 // Application Status Section
-                pdfDoc.Add(new Paragraph("Application Status Overview:", new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD)));
-                PdfPTable appTable = new PdfPTable(2);
-                appTable.AddCell("Status");
-                appTable.AddCell("Count");
+                AddSectionHeader(pdfDoc, "Application Status Overview");
+                PdfPTable appTable = CreateTable(new[] { "Status", "Count" });
 
                 var applicationStatuses = _context.BurialApplications
                     .GroupBy(a => a.Status)
@@ -232,26 +196,143 @@ namespace AreEyeP.Controllers
 
                 foreach (var status in applicationStatuses)
                 {
-                    appTable.AddCell(status.Status);
-                    appTable.AddCell(status.Count.ToString());
+                    AddTableRow(appTable, status.Status, status.Count.ToString());
                 }
                 pdfDoc.Add(appTable);
 
                 // Add Application Status Chart
                 if (!string.IsNullOrEmpty(charts.ApplicationChart))
                 {
-                    pdfDoc.Add(new Paragraph("\n"));
-                    var appChartBytes = Convert.FromBase64String(charts.ApplicationChart.Split(',')[1]);
-                    Image appChartImage = Image.GetInstance(appChartBytes);
-                    appChartImage.ScaleToFit(500f, 300f);
-                    pdfDoc.Add(appChartImage);
+                    AddChartToPDF(pdfDoc, charts.ApplicationChart);
                 }
 
-                // Repeat for other sections...
+                // Service Requests Section
+                AddSectionHeader(pdfDoc, "Service Requests Overview");
+                PdfPTable serviceTable = CreateTable(new[] { "Service Type", "Count" });
 
-                // Close the PDF document
+                var allServices = _context.Services.Select(s => s.ServiceName).ToList();
+                var serviceRequestCounts = _context.ServiceRequests
+                    .GroupBy(sr => sr.ServiceType)
+                    .Select(g => new { ServiceType = g.Key, Count = g.Count() })
+                    .ToList();
+
+                foreach (var service in allServices)
+                {
+                    var count = serviceRequestCounts.FirstOrDefault(s => s.ServiceType == service)?.Count ?? 0;
+                    AddTableRow(serviceTable, service, count.ToString());
+                }
+                pdfDoc.Add(serviceTable);
+
+                // Add Service Requests Chart
+                if (!string.IsNullOrEmpty(charts.ServiceChart))
+                {
+                    AddChartToPDF(pdfDoc, charts.ServiceChart);
+                }
+
+                // Payments Section
+                AddSectionHeader(pdfDoc, "Payments Overview");
+                PdfPTable paymentTable = CreateTable(new[] { "Service Type", "Total Amount" });
+
+                var paymentsReport = _context.ClientPayments
+                    .GroupBy(p => p.ServiceType)
+                    .Select(g => new { ServiceType = g.Key, TotalAmount = g.Sum(p => p.Amount) })
+                    .ToList();
+
+                foreach (var payment in paymentsReport)
+                {
+                    AddTableRow(paymentTable, payment.ServiceType, payment.TotalAmount.ToString("C"));
+                }
+                pdfDoc.Add(paymentTable);
+
+                // Add Payments Chart
+                if (!string.IsNullOrEmpty(charts.PaymentChart))
+                {
+                    AddChartToPDF(pdfDoc, charts.PaymentChart);
+                }
+
                 pdfDoc.Close();
                 return File(stream.ToArray(), "application/pdf", "LGU_Report.pdf");
+            }
+        }
+
+        // Helper Methods
+
+        private void AddCoverPage(Document pdfDoc)
+        {
+            PdfPTable headerTable = new PdfPTable(1) { WidthPercentage = 100 };
+            headerTable.DefaultCell.Border = Rectangle.NO_BORDER;
+            headerTable.DefaultCell.HorizontalAlignment = Element.ALIGN_CENTER;
+
+            string logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "logo.png");
+            if (System.IO.File.Exists(logoPath))
+            {
+                Image logo = Image.GetInstance(logoPath);
+                logo.ScaleToFit(100f, 100f);
+                PdfPCell logoCell = new PdfPCell(logo)
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    PaddingBottom = 20
+                };
+                headerTable.AddCell(logoCell);
+            }
+
+            headerTable.AddCell(new Phrase("AreEyeP Reports", new Font(Font.FontFamily.HELVETICA, 24, Font.BOLD)));
+            headerTable.AddCell(new Phrase($"Generated on: {DateTime.Now:MMMM dd, yyyy}", new Font(Font.FontFamily.HELVETICA, 12)));
+            pdfDoc.Add(headerTable);
+            pdfDoc.NewPage();
+        }
+
+        private void AddSectionHeader(Document pdfDoc, string title)
+        {
+            Paragraph header = new Paragraph(title, new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD))
+            {
+                SpacingBefore = 20f,
+                SpacingAfter = 10f
+            };
+            pdfDoc.Add(header);
+        }
+
+        private PdfPTable CreateTable(string[] headers)
+        {
+            PdfPTable table = new PdfPTable(headers.Length) { WidthPercentage = 100, SpacingBefore = 10f, SpacingAfter = 10f };
+            foreach (string header in headers)
+            {
+                PdfPCell cell = new PdfPCell(new Phrase(header, new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD)))
+                {
+                    BackgroundColor = BaseColor.LIGHT_GRAY,
+                    HorizontalAlignment = Element.ALIGN_CENTER
+                };
+                table.AddCell(cell);
+            }
+            return table;
+        }
+
+        private void AddTableRow(PdfPTable table, string col1, string col2)
+        {
+            table.AddCell(new PdfPCell(new Phrase(col1, new Font(Font.FontFamily.HELVETICA, 10))));
+            table.AddCell(new PdfPCell(new Phrase(col2, new Font(Font.FontFamily.HELVETICA, 10))) { HorizontalAlignment = Element.ALIGN_CENTER });
+        }
+
+        private void AddChartToPDF(Document pdfDoc, string chartBase64)
+        {
+            pdfDoc.Add(new Paragraph("\n"));
+            var chartBytes = Convert.FromBase64String(chartBase64.Split(',')[1]);
+            Image chartImage = Image.GetInstance(chartBytes);
+            chartImage.ScaleToFit(500f, 300f);
+            chartImage.Alignment = Element.ALIGN_CENTER;
+            pdfDoc.Add(chartImage);
+        }
+
+        // Page Number Helper Class
+        public class PdfPageNumberHelper : PdfPageEventHelper
+        {
+            public override void OnEndPage(PdfWriter writer, Document document)
+            {
+                PdfContentByte cb = writer.DirectContent;
+                ColumnText.ShowTextAligned(cb, Element.ALIGN_CENTER,
+                    new Phrase($"Page {writer.PageNumber}", new Font(Font.FontFamily.HELVETICA, 10)),
+                    (document.Left + document.Right) / 2, document.Bottom - 20, 0);
             }
         }
 
@@ -261,6 +342,5 @@ namespace AreEyeP.Controllers
             public string ServiceChart { get; set; }
             public string PaymentChart { get; set; }
         }
-
     }
 }
