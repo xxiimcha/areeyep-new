@@ -169,12 +169,63 @@
         }
 
         function clearNotifications() {
-            if (!confirm("Are you sure you want to clear all notifications?")) return;
-            fetch(`/Notifications/ClearAll`, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => { if (data.success) location.reload(); })
-                .catch(error => console.error("Error:", error));
+            Swal.fire({
+                title: "Are you sure?",
+                text: "This will remove all notifications permanently!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, clear all!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/Notifications/ClearAll`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire("Cleared!", "All notifications have been removed.", "success")
+                                    .then(() => location.reload());
+                            } else {
+                                Swal.fire("Error!", "Failed to clear notifications.", "error");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            Swal.fire("Error!", "An unexpected error occurred.", "error");
+                        });
+                }
+            });
         }
+
+        function clearNotifications() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "This will remove all notifications permanently!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, clear all!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/Notifications/ClearAll`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire("Cleared!", "All notifications have been removed.", "success")
+                                    .then(() => location.reload());
+                            } else {
+                                Swal.fire("Error!", "Failed to clear notifications.", "error");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            Swal.fire("Error!", "An unexpected error occurred.", "error");
+                        });
+                }
+            });
+        }
+
     </script>
 </body>
 </html>
