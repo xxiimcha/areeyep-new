@@ -403,23 +403,50 @@
                     formData.append('burialId', burialId);
 
                     // Send data to the server
-                    $.ajax({
+                     $.ajax({
                         url: '/ClientPayment/UploadReceipt',
                         type: 'POST',
                         data: formData,
                         processData: false,
                         contentType: false,
+                        beforeSend: function () {
+                            Swal.fire({
+                                title: "Uploading Receipt",
+                                text: "Please wait...",
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
                         success: function (response) {
+                            Swal.close(); // Close loading alert
+
                             if (response.success) {
-                                alert('Receipt uploaded successfully.');
-                                $('#paymentModal').modal('hide');
-                                location.reload(); // Refresh to reflect updated status
+                                Swal.fire({
+                                    title: "Success!",
+                                    text: "Receipt uploaded successfully.",
+                                    icon: "success"
+                                }).then(() => {
+                                    $('#paymentModal').modal('hide');
+                                    location.reload(); // Refresh to reflect updated status
+                                });
                             } else {
-                                alert('Failed to upload receipt: ' + response.message);
+                                Swal.fire({
+                                    title: "Upload Failed",
+                                    text: "Failed to upload receipt: " + response.message,
+                                    icon: "error"
+                                });
                             }
                         },
                         error: function () {
-                            alert('An error occurred while uploading the receipt.');
+                            Swal.close(); // Close loading alert
+
+                            Swal.fire({
+                                title: "Error!",
+                                text: "An error occurred while uploading the receipt.",
+                                icon: "error"
+                            });
                         }
                     });
                 }
@@ -485,42 +512,69 @@
                 $('#paymentModal').modal('show');
             });
 
-            // Handle Proceed to E-payment Button
-            $('#proceedToEPayment').on('click', function () {
-                $('#paymentModal').modal('hide'); // Hide current modal
-                loadPaymentMethods(); // Load payment methods
-                $('#ePaymentModal').modal('show'); // Show E-payment modal
-            });
+        $('#proceedToEPayment').on('click', function () {
+            $('#paymentModal').modal('hide'); // Hide current modal
+            loadPaymentMethods(); // Load payment methods
+            $('#ePaymentModal').modal('show'); // Show E-payment modal
+        });
 
-            $('#ePaymentForm').on('submit', function (e) {
-                e.preventDefault();
+        $('#ePaymentForm').on('submit', function (e) {
+            e.preventDefault();
 
-                const formData = new FormData();
-                formData.append('PaymentId', $('#paymentId').text());
-                formData.append('PaymentMethod', $('input[name="paymentMethod"]:checked').val());
-                formData.append('ReferenceNumber', $('#paymentId').text()); // Use paymentId as ReferenceNumber
-                formData.append('paymentProof', $('#paymentProof')[0].files[0]); // Add proof of payment file
+            const formData = new FormData();
+            formData.append('PaymentId', $('#paymentId').text());
+            formData.append('PaymentMethod', $('input[name="paymentMethod"]:checked').val());
+            formData.append('ReferenceNumber', $('#paymentId').text()); // Use paymentId as ReferenceNumber
+            formData.append('paymentProof', $('#paymentProof')[0].files[0]); // Add proof of payment file
 
-                $.ajax({
-                    url: '/ClientPayment/ProcessEPayment', // API endpoint to process payment
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function (response) {
-                        if (response.success) {
-                            alert('Payment processed successfully.');
+            $.ajax({
+                url: '/ClientPayment/ProcessEPayment', // API endpoint to process payment
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                beforeSend: function () {
+                    Swal.fire({
+                        title: "Processing Payment",
+                        text: "Please wait...",
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+                success: function (response) {
+                    Swal.close(); // Close loading alert
+
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Success!",
+                            text: "Payment processed successfully.",
+                            icon: "success"
+                        }).then(() => {
                             $('#ePaymentModal').modal('hide');
                             location.reload(); // Refresh page to update payment status
-                        } else {
-                            alert('Failed to process payment: ' + response.message);
-                        }
-                    },
-                    error: function () {
-                        alert('Error processing payment.');
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Failed!",
+                            text: "Failed to process payment: " + response.message,
+                            icon: "error"
+                        });
                     }
-                });
+                },
+                error: function () {
+                    Swal.close(); // Close loading alert
+
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Error processing payment.",
+                        icon: "error"
+                    });
+                }
             });
+        });
+
 
             // Handle Cancel Button
             $('.cancel-btn').on('click', function () {
